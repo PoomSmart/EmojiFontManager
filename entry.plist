@@ -1,0 +1,10 @@
+{
+	entry = {
+		bundle = "EFMPref";
+		cell = PSLinkCell;
+		detail = "EFMPrefController";
+		icon = "EFMPref.png";
+		isController = 1;
+		label = "EmojiFontManager";
+	};
+}
