@@ -1,5 +1,5 @@
-TARGET = iphone:latest:6.0
-PACKAGE_VERSION = 0.0.2
+TARGET = iphone:clang:latest:6.0
+PACKAGE_VERSION = 0.0.3
 
 include $(THEOS)/makefiles/common.mk
 
@@ -11,6 +11,7 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 BUNDLE_NAME = EFMPref
 EFMPref_FILES = EFMPref.m
 EFMPref_INSTALL_PATH = /Library/PreferenceBundles
+EFMPref_LIBRARIES = EmojiLibrary
 EFMPref_PRIVATE_FRAMEWORKS = Preferences
 EFMPref_FRAMEWORKS = CoreGraphics UIKit
 
