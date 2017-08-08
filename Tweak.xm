@@ -14,7 +14,7 @@ NSString *getPath(NSString *font) {
 
 extern "C" CFArrayRef CGFontCreateFontsWithPath(CFStringRef);
 %hookf(CFArrayRef, CGFontCreateFontsWithPath, CFStringRef path) {
-    if (path && ([(NSString *) path hasSuffix:@"AppleColorEmoji@2x.ttf"] || [(NSString *) path hasSuffix:@"AppleColorEmoji.ttf"])) {
+    if (path && ([(NSString *) path hasSuffix:@"AppleColorEmoji@2x.ttf"] || [(NSString *) path hasSuffix:@"AppleColorEmoji.ttf"] || ([(NSString *) path hasSuffix:@"AppleColorEmoji_2x.ttf"] || [(NSString *) path hasSuffix:@"AppleColorEmoji_1x.ttf"]))) {
         //NSString *newPath = [path stringByReplacingOccurrencesOfString:emojiFontFolder withString:newEmojiFontFolder];
         NSString *newPath = getPath(selectedFont);
         if (newPath && ![newPath isEqualToString:defaultName] && fileExist(newPath)) {
