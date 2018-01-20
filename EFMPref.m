@@ -1,10 +1,9 @@
-#define KILL_PROCESS
 #define UIFUNCTIONS_NOT_C
 #import <UIKit/UIKit.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSTableCell.h>
-#import <SpringBoardServices/SpringBoardServices.h>
+#import <Cephei/HBRespringController.h>
 #import "Prefs.h"
 #import "Header.h"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
@@ -59,17 +58,7 @@ DeclarePrefsTools()
 }
 
 - (void)respring {
-    if (isiOS8Up) {
-        dlopen("/System/Library/PrivateFrameworks/FrontBoardServices.framework/FrontBoardServices", RTLD_LAZY);
-        dlopen("/System/Library/PrivateFrameworks/SpringBoardServices.framework/SpringBoardServices", RTLD_LAZY);
-        id restartAction;
-        if (objc_getClass("SBSRelaunchAction"))
-            restartAction = [objc_getClass("SBSRelaunchAction") actionWithReason:@"RestartRenderServer" options:SBSRelaunchOptionsSnapshot targetURL:nil];
-        else
-            restartAction = [objc_getClass("SBSRestartRenderServerAction") restartActionWithTargetRelaunchURL:nil];
-        [[objc_getClass("FBSSystemService") sharedService] sendActions:[NSSet setWithObject:restartAction] withResult:nil];
-    } else
-        killProcess("SpringBoard");
+    [NSClassFromString(@"HBRespringController") respring];
 }
 
 - (void)setSpecifier:(PSSpecifier *)specifier {
@@ -154,7 +143,7 @@ DeclarePrefsTools()
         return cell;
     } else if (indexPath.section == [self numberOfSectionsInTableView:tableView] - 1) {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"info"] ? : [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"info"] autorelease];
-        cell.textLabel.text = indexPath.row == 0 ? @"💰👉🏻👨🏻‍💻" : (indexPath.row == 1 ? @"Respring ❄️" : @"Reset emoji preferences");
+        cell.textLabel.text = indexPath.row == 0 ? @"Donate" : (indexPath.row == 1 ? @"Respring ❄️" : @"Reset emoji preferences");
         cell.textLabel.font = [UIFont boldSystemFontOfSize:17.0];
         cell.textLabel.textAlignment = NSTextAlignmentCenter;
         return cell;

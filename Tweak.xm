@@ -41,7 +41,7 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
 %end
 
 %ctor {
-    if (isTarget(TargetTypeGUINoExtension)) {
+    if (isTarget(TargetTypeGUI)) {
         HaveObserver();
         callback();
         BOOL iOS82 = isiOS82;
