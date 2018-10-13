@@ -5,18 +5,17 @@
 #import <Preferences/PSTableCell.h>
 #import <Cephei/HBRespringController.h>
 #import "Prefs.h"
-#import "Header.h"
+#import "../PSPrefs.x"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
 #import <objc/runtime.h>
 #import <dlfcn.h>
 
 #define RowHeight 44.0
 
-DeclarePrefsTools()
-
 @interface EFMPrefController : PSViewController <UITableViewDataSource, UITableViewDelegate> {
     NSArray <NSString *> *allEmojiFonts;
     NSString *selectedFont;
+    HBPreferences *preferences;
 }
 @end
 
@@ -25,6 +24,7 @@ DeclarePrefsTools()
 - (id)init {
     if (self == [super init]) {
         self.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithTitle:@"Reload" style:UIBarButtonItemStylePlain target:self action:@selector(reloadTable)] autorelease];
+        preferences = [[HBPreferences alloc] initWithIdentifier:tweakIdentifier];
         [self reloadFonts];
         [self reloadSelectedFont];
     }
@@ -49,7 +49,7 @@ DeclarePrefsTools()
 }
 
 - (void)reloadSelectedFont {
-    selectedFont = [valueForKey(selectedFontKey, defaultName) retain];
+    selectedFont = [[preferences objectForKey:selectedFontKey default:defaultName] retain];
 }
 
 - (void)reloadTable {
@@ -58,15 +58,15 @@ DeclarePrefsTools()
 }
 
 - (void)respring {
-    [NSClassFromString(@"HBRespringController") respring];
+    [HBRespringController respring];
 }
 
 - (void)setSpecifier:(PSSpecifier *)specifier {
     [super setSpecifier:specifier];
     self.navigationItem.title = @"EFM 🚀";
     if ([self isViewLoaded]) {
-        [(UITableView *) self.view setRowHeight:RowHeight];
-        [(UITableView *) self.view reloadData];
+        [(UITableView *)self.view setRowHeight:RowHeight];
+        [(UITableView *)self.view reloadData];
     }
 }
 
@@ -80,7 +80,7 @@ DeclarePrefsTools()
 
 - (NSString *)tableView:(UITableView *)table titleForHeaderInSection:(NSInteger)section {
     if (section == 0)
-        return [NSString stringWithFormat:@"Fonts in %@", [self fontsPath]];
+        return [NSString stringWithFormat:@"Fonts in %@", [self _fontsPath]];
     return nil;
 }
 
@@ -91,7 +91,7 @@ DeclarePrefsTools()
         footer2.backgroundColor = UIColor.clearColor;
         UILabel *lbl2 = [[UILabel alloc] initWithFrame:footer2.frame];
         lbl2.backgroundColor = [UIColor clearColor];
-        lbl2.text = @"©️ 2016 - 2017 Thatchapon Unprasert\n(@PoomSmart)";
+        lbl2.text = @"©️ 2016 - 2018 Thatchapon Unprasert\n(@PoomSmart)";
         lbl2.textColor = UIColor.grayColor;
         lbl2.font = [UIFont systemFontOfSize:14.0];
         lbl2.textAlignment = NSTextAlignmentCenter;
@@ -109,13 +109,13 @@ DeclarePrefsTools()
     return section == [self numberOfSectionsInTableView:tableView] - 1 ? 100.0 : 0.0;
 }
 
-- (NSString *)fontsPath {
-    return fontsPath();
+- (NSString *)_fontsPath {
+    return fontsPath;
 }
 
 - (NSArray *)allEmojiFonts {
     NSError *error = nil;
-    NSArray <NSString *> *contents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[self fontsPath] error:&error];
+    NSArray <NSString *> *contents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[self _fontsPath] error:&error];
     if (error) {
         HBLogDebug(@"%@", [error localizedDescription]);
         return @[];
@@ -161,7 +161,8 @@ DeclarePrefsTools()
             UITableViewCell *cell = [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:section]];
             cell.accessoryType = [[selectedFont stringByDeletingPathExtension] isEqualToString:cell.textLabel.text] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
         }
-        setValueForKey(selectedFont, selectedFontKey, YES);
+        [preferences setObject:selectedFont forKey:selectedFontKey];
+        DoPostNotification();
     } else if (section == 1) {
         if (value == 0)
             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:PS_DONATE_URL]];

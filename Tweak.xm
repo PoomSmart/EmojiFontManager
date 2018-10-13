@@ -3,33 +3,42 @@
 #import "Prefs.h"
 #import "../PS.h"
 
-CFStringRef emojiFontPath2x, emojiFontPath;
-CFStringRef emojiFontPath2x_o, emojiFontPath_o;
-CFStringRef emojiFontFolder, newEmojiFontFolder;
+HBPreferences *preferences;
+NSString *selectedFont;
+
+NSString *emojiFontPath, *emojiFontPath2, *emojiFontPath3;
+NSString *emojiFontFolder, *newEmojiFontFolder;
 CFStringRef emojiFontPathPrefix_83;
 
 NSString *getPath(NSString *font) {
-    return [NSString stringWithFormat:@"%@/%@/AppleColorEmoji@2x.ttf", (NSString *)newEmojiFontFolder, font];
+    if (font == nil) {
+        HBLogError(@"font name is nil");
+        return nil;
+    }
+    NSString *format = isiOS10Up ? @"%@/%@/AppleColorEmoji@2x.ttc" : @"%@/%@/AppleColorEmoji@2x.ttf";
+    return [NSString stringWithFormat:format, (__bridge NSString *)newEmojiFontFolder, font];
 }
 
-extern "C" CFArrayRef CGFontCreateFontsWithPath(CFStringRef);
-%hookf(CFArrayRef, CGFontCreateFontsWithPath, CFStringRef path) {
-    if (path && ([(NSString *) path hasSuffix:@"AppleColorEmoji@2x.ttf"] || [(NSString *) path hasSuffix:@"AppleColorEmoji.ttf"] || ([(NSString *) path hasSuffix:@"AppleColorEmoji_2x.ttf"] || [(NSString *) path hasSuffix:@"AppleColorEmoji_1x.ttf"]))) {
-        //NSString *newPath = [path stringByReplacingOccurrencesOfString:emojiFontFolder withString:newEmojiFontFolder];
+extern "C" CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
+%hookf(CFMutableArrayRef, CGFontCreateFontsWithPath, CFStringRef const path) {
+    NSString *path_ = (__bridge NSString *)path;
+    if (path && (stringEqual(path_, emojiFontPath) || stringEqual(path_, emojiFontPath2) || stringEqual(path_, emojiFontPath3))) {
         NSString *newPath = getPath(selectedFont);
-        if (newPath && ![newPath isEqualToString:defaultName] && fileExist(newPath)) {
+        if (newPath && !stringEqual(newPath, defaultName) && fileExist(newPath)) {
             HBLogDebug(@"New path: %@", newPath);
-            return %orig((CFStringRef)newPath);
+            return %orig((__bridge CFStringRef const)newPath);
         }
     }
     return %orig(path);
 }
 
+//%end
+
 %group iOS83Up
 
 extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, CFStringRef);
 %hookf(CFURLRef, CFURLCreateCopyAppendingPathExtension, CFAllocatorRef allocator, CFURLRef url, CFStringRef extension) {
-    if (url && CFEqual(extension, CFSTR("ccf")) && ![selectedFont isEqualToString:defaultName] && fileExist(getPath(selectedFont))) {
+    if (url && CFStringEqual(extension, CFSTR("ccf")) && ![selectedFont isEqualToString:defaultName] && fileExist(getPath(selectedFont))) {
         CFStringRef path = CFURLCopyPath(url);
         if (CFStringHasPrefix(path, emojiFontPathPrefix_83))
             extension = CFSTR("null");
@@ -42,19 +51,18 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
 
 %ctor {
     if (isTarget(TargetTypeGUI)) {
-        HaveObserver();
-        callback();
-        BOOL iOS82 = isiOS82;
-        emojiFontPath2x = iOS82 ? CFSTR("/System/Library/Fonts/Core/AppleColorEmoji_2x.ttf") : CFSTR("/System/Library/Fonts/Core/AppleColorEmoji@2x.ttf");
-        emojiFontPath = iOS82 ? CFSTR("/System/Library/Fonts/Core/AppleColorEmoji_1x.ttf") : CFSTR("/System/Library/Fonts/Core/AppleColorEmoji.ttf");
-        emojiFontPath2x_o = CFSTR("/System/Library/Fonts/Cache/AppleColorEmoji@2x.ttf");
-        emojiFontPath_o = CFSTR("/System/Library/Fonts/Cache/AppleColorEmoji.ttf");
-        emojiFontFolder = isiOS82Up ? CFSTR("/System/Library/Fonts/Core") : CFSTR("/System/Library/Fonts/Cache");
-        newEmojiFontFolder = (CFStringRef)fontsPath();
+        preferences = [[HBPreferences alloc] initWithIdentifier:tweakIdentifier];
+        [preferences registerObject:&selectedFont default:defaultName forKey:selectedFontKey];
+        BOOL iOS82Up = isiOS82Up;
+        emojiFontFolder = [[NSString stringWithFormat:@"/System/Library/Fonts/%@", iOS82Up ? @"Core" : @"Cache"] retain];
+        emojiFontPath = [[NSString stringWithFormat:@"%@/AppleColorEmoji%@.%@", emojiFontFolder, isiOS82 ? @"_2x" : @"@2x", isiOS10Up ? @"ttc" : @"ttf"] retain];
+        emojiFontPath2 = [[emojiFontPath stringByReplacingOccurrencesOfString:@"2x" withString:@"1x"] retain];
+        emojiFontPath3 = [[emojiFontPath stringByReplacingOccurrencesOfString:@"1x" withString:@""] retain];
+        newEmojiFontFolder = [fontsPath retain];
         emojiFontPathPrefix_83 = CFSTR("/System/Library/Fonts/Core/AppleColorEmoji");
-        %init;
         if (isiOS83Up) {
             %init(iOS83Up);
         }
+        %init;
     }
 }

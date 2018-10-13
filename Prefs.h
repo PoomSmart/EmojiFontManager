@@ -1,18 +1,7 @@
 #import "../PS.h"
-#import "../PSPrefs.x"
+#import <Cephei/HBPreferences.h>
 
-NSString *tweakIdentifier = @"com.PS.EmojiFontManager";
-NSString *selectedFontKey = @"selectedFont";
-NSString *defaultName = @"Default";
-NSString *fontsPath() { return isiOS7Up ? @"/Library/Themes/EmojiFontManager" : @"/User/Library/Themes/EmojiFontManager"; }
-
-#ifdef TWEAK
-
-NSString *selectedFont;
-
-HaveCallback() {
-	GetPrefs()
-	GetObject2(selectedFont, defaultName)
-}
-
-#endif
+#define tweakIdentifier @"com.PS.EmojiFontManager"
+#define selectedFontKey @"selectedFont"
+#define defaultName @"Default"
+#define fontsPath (isiOS7Up ? @"/Library/Themes/EmojiFontManager" : @"/User/Library/Themes/EmojiFontManager")
