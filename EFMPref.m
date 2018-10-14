@@ -79,9 +79,7 @@
 }
 
 - (NSString *)tableView:(UITableView *)table titleForHeaderInSection:(NSInteger)section {
-    if (section == 0)
-        return [NSString stringWithFormat:@"Fonts in %@", [self _fontsPath]];
-    return nil;
+    return section == 0 ? @"Available Fonts" : nil;
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
@@ -128,7 +126,7 @@
     if (section == 0)
         return allEmojiFonts.count + 1;
     if (section == [self numberOfSectionsInTableView:table] - 1)
-        return 3;
+        return 2 + (isiOS11Up ? 0 : 1);
     return 0;
 }
 
@@ -151,12 +149,21 @@
     return nil;
 }
 
+- (BOOL)isFontSupported:(NSString *)font {
+    return [[NSFileManager defaultManager] fileExistsAtPath:getPath(font)];
+}
+
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     NSInteger section = indexPath.section;
     NSInteger value = indexPath.row;
     if (section == 0) {
-        selectedFont = value < allEmojiFonts.count ? allEmojiFonts[value] : defaultName;
+        NSString *font = value < allEmojiFonts.count ? allEmojiFonts[value] : defaultName;
+        if (!stringEqual(font, defaultName) && ![self isFontSupported:font]) {
+            [tableView cellForRowAtIndexPath:indexPath].textLabel.text = @"NOT SUPPORTED";
+            return;
+        }
+        selectedFont = font;
         for (NSInteger i = 0; i <= allEmojiFonts.count; i++) {
             UITableViewCell *cell = [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:section]];
             cell.accessoryType = [[selectedFont stringByDeletingPathExtension] isEqualToString:cell.textLabel.text] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;

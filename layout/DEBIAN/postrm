@@ -13,9 +13,9 @@ IFS=$(echo -en "\n\b")
 
 for theme in $(find ${EFM_THEME_PATH} -maxdepth 1 -type l -name "*.font")
 do
-    if [ -l ${theme} ]
+    if [ -L "${theme}" ]
     then
-        rm -rf ${theme}
+        rm -rf "${theme}"
     fi
 done
 
