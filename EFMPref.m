@@ -149,20 +149,12 @@
     return nil;
 }
 
-- (BOOL)isFontSupported:(NSString *)font {
-    return [[NSFileManager defaultManager] fileExistsAtPath:getPath(font)];
-}
-
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     NSInteger section = indexPath.section;
     NSInteger value = indexPath.row;
     if (section == 0) {
         NSString *font = value < allEmojiFonts.count ? allEmojiFonts[value] : defaultName;
-        if (!stringEqual(font, defaultName) && ![self isFontSupported:font]) {
-            [tableView cellForRowAtIndexPath:indexPath].textLabel.text = @"NOT SUPPORTED";
-            return;
-        }
         selectedFont = font;
         for (NSInteger i = 0; i <= allEmojiFonts.count; i++) {
             UITableViewCell *cell = [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:section]];
