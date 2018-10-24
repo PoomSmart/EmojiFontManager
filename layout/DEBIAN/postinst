@@ -8,8 +8,8 @@ then
     exit 0
 fi
 
-EFM_THEME_PATH=/Library/Themes/EmojiFontManager # iOS 6- /User/Library/Themes/EmojiFontManager
-mkdir -p ${EFM_THEME_PATH}
+EFM_THEME_PATH=/Library/Themes/EmojiFontManager
+mkdir -p "${EFM_THEME_PATH}"
 
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")

@@ -1,5 +1,4 @@
 #define CHECK_TARGET
-#define TWEAK
 #import "Prefs.h"
 #import "../PS.h"
 

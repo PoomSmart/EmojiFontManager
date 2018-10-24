@@ -35,6 +35,10 @@
     return (UITableView *)self.view;
 }
 
+- (UITableView *)table {
+    return self.tableView;
+}
+
 - (void)loadView {
     UITableView *tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleGrouped];
     tableView.dataSource = self;

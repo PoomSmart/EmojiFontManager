@@ -4,7 +4,7 @@
 #define tweakIdentifier @"com.PS.EmojiFontManager"
 #define selectedFontKey @"selectedFont"
 #define defaultName @"Default"
-#define fontsPath (isiOS7Up ? [[@"/Library/Themes/EmojiFontManager" retain] autorelease] : [[@"/User/Library/Themes/EmojiFontManager" retain] autorelease])
+#define fontsPath [[@"/Library/Themes/EmojiFontManager" retain] autorelease]
 
 NSString *getPath(NSString *font) {
     if (font == nil) {
