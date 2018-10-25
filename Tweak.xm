@@ -1,4 +1,5 @@
 #define CHECK_TARGET
+#define CHECK_EXCEPTIONS
 #import "Prefs.h"
 #import "../PS.h"
 
@@ -46,7 +47,7 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
 %end
 
 %ctor {
-    if (isTarget(TargetTypeGUI)) {
+    if (_isTarget(TargetTypeGUI, @[@"com.apple.WebKit.WebContent"])) {
         preferences = [[HBPreferences alloc] initWithIdentifier:tweakIdentifier];
         [preferences registerObject:&selectedFont default:defaultName forKey:selectedFontKey];
         BOOL iOS82Up = isiOS82Up;
