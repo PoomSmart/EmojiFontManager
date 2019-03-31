@@ -9,19 +9,15 @@ NSString *selectedFont;
 NSString *emojiFontPath, *emojiFontPath2, *emojiFontPath3;
 NSString *emojiFontFolder;
 
-static BOOL efm_fileExist(NSString *path) {
-    return fileExist(path);
-}
-
 extern "C" CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
 %hookf(CFMutableArrayRef, CGFontCreateFontsWithPath, CFStringRef const path) {
     NSString *path_ = (__bridge NSString *)path;
     if (path && (stringEqual(path_, emojiFontPath) || stringEqual(path_, emojiFontPath2) || stringEqual(path_, emojiFontPath3))) {
         NSString *newPath = getPath(selectedFont);
         if (newPath && !stringEqual(newPath, defaultName)) {
-            BOOL exist = efm_fileExist(newPath);
+            BOOL exist = fileExist(newPath);
             if (!exist)
-                exist = efm_fileExist(newPath = [newPath stringByReplacingOccurrencesOfString:@"ttf" withString:@"ttc"]);
+                exist = fileExist(newPath = [newPath stringByReplacingOccurrencesOfString:@"ttf" withString:@"ttc"]);
             if (exist) {
                 HBLogDebug(@"New emoji font path: %@", newPath);
                 return %orig((__bridge CFStringRef const)newPath);
@@ -39,7 +35,7 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
         CFStringRef path = CFURLCopyPath(url);
         if (CFStringFind(path, CFSTR("/System/Library/Fonts/Core/AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
             extension = CFSTR("null");
-        CFRelease(path);
+        if (path) CFRelease(path);
     }
     return %orig(allocator, url, extension);
 }
@@ -47,8 +43,9 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
 %end
 
 %ctor {
-    if (_isTarget(TargetTypeGUI, @[@"com.apple.WebKit.WebContent"])) {
-        preferences = [[HBPreferences alloc] initWithIdentifier:tweakIdentifier];
+    if (_isTarget(TargetTypeApps, @[@"com.apple.WebKit.WebContent"])) {
+        dlopen("/Library/Frameworks/Cephei.framework/Cephei", RTLD_NOW);
+        preferences = [[NSClassFromString(@"HBPreferences") alloc] initWithIdentifier:tweakIdentifier];
         [preferences registerObject:&selectedFont default:defaultName forKey:selectedFontKey];
         BOOL iOS82Up = isiOS82Up;
         emojiFontFolder = [[NSString stringWithFormat:@"/System/Library/Fonts/%@", iOS82Up ? @"Core" : @"Cache"] retain];
@@ -60,4 +57,15 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
         }
         %init;
     }
+}
+
+%dtor {
+    if (emojiFontPath)
+        [emojiFontPath autorelease];
+    if (emojiFontPath2)
+        [emojiFontPath2 autorelease];
+    if (emojiFontPath3)
+        [emojiFontPath3 autorelease];
+    if (emojiFontFolder)
+        [emojiFontFolder autorelease];
 }

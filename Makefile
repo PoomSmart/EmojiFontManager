@@ -1,11 +1,11 @@
 TARGET = iphone:clang:11.2:6.0
-PACKAGE_VERSION = 0.0.5f
+ARCHS = armv7 arm64 arm64e
+PACKAGE_VERSION = 0.0.6
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = EmojiFontManager
 EmojiFontManager_FILES = Tweak.xm
-EmojiFontManager_EXTRA_FRAMEWORKS = Cephei
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

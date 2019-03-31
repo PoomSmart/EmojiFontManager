@@ -1,11 +1,10 @@
-#define UIFUNCTIONS_NOT_C
 #import <UIKit/UIKit.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSTableCell.h>
 #import <Cephei/HBRespringController.h>
 #import "Prefs.h"
-#import "../PSPrefs.x"
+#import "../PSPrefs/PSPrefs.x"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
 #import <objc/runtime.h>
 #import <dlfcn.h>
@@ -61,10 +60,6 @@
     [self.tableView reloadData];
 }
 
-- (void)respring {
-    [HBRespringController respring];
-}
-
 - (void)setSpecifier:(PSSpecifier *)specifier {
     [super setSpecifier:specifier];
     self.navigationItem.title = @"EFM 🚀";
@@ -93,7 +88,7 @@
         footer2.backgroundColor = UIColor.clearColor;
         UILabel *lbl2 = [[UILabel alloc] initWithFrame:footer2.frame];
         lbl2.backgroundColor = [UIColor clearColor];
-        lbl2.text = @"©️ 2016 - 2018 Thatchapon Unprasert\n(@PoomSmart)";
+        lbl2.text = @"©️ 2016 - 2019 Thatchapon Unprasert\n(@PoomSmart)";
         lbl2.textColor = UIColor.grayColor;
         lbl2.font = [UIFont systemFontOfSize:14.0];
         lbl2.textAlignment = NSTextAlignmentCenter;
@@ -130,7 +125,7 @@
     if (section == 0)
         return allEmojiFonts.count + 1;
     if (section == [self numberOfSectionsInTableView:table] - 1)
-        return 2 + (isiOS11Up ? 0 : 1);
+        return 1 + (isiOS11Up ? 0 : 1);
     return 0;
 }
 
@@ -145,7 +140,7 @@
         return cell;
     } else if (indexPath.section == [self numberOfSectionsInTableView:tableView] - 1) {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"info"] ? : [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"info"] autorelease];
-        cell.textLabel.text = indexPath.row == 0 ? @"Donate" : (indexPath.row == 1 ? @"Respring ❄️" : @"Reset emoji preferences");
+        cell.textLabel.text = indexPath.row == 0 ? @"Respring ❄️" : @"Reset emoji preferences";
         cell.textLabel.font = [UIFont boldSystemFontOfSize:17.0];
         cell.textLabel.textAlignment = NSTextAlignmentCenter;
         return cell;
@@ -168,9 +163,7 @@
         DoPostNotification();
     } else if (section == 1) {
         if (value == 0)
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:PS_DONATE_URL]];
-        else if (value == 1)
-            [self respring];
+            [HBRespringController respring];
         else
             [PSEmojiUtilities resetEmojiPreferences];
     }
