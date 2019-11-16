@@ -4,7 +4,6 @@
 #import <Preferences/PSTableCell.h>
 #import <Cephei/HBRespringController.h>
 #import "Prefs.h"
-#import "../PSPrefs/PSPrefs.x"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
 #import <objc/runtime.h>
 #import <dlfcn.h>
@@ -133,7 +132,6 @@
     if (indexPath.section == 0) {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"selection"] ? : [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"selection"] autorelease];
         cell.textLabel.textAlignment = NSTextAlignmentLeft;
-        cell.backgroundColor = UIColor.whiteColor;
         NSString *value = indexPath.row < allEmojiFonts.count ? allEmojiFonts[indexPath.row] : defaultName;
         cell.textLabel.text = [value stringByDeletingPathExtension];
         cell.accessoryType = [selectedFont isEqualToString:value] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
@@ -155,12 +153,12 @@
     if (section == 0) {
         NSString *font = value < allEmojiFonts.count ? allEmojiFonts[value] : defaultName;
         selectedFont = font;
-        for (NSInteger i = 0; i <= allEmojiFonts.count; i++) {
+        for (NSInteger i = 0; i <= allEmojiFonts.count; ++i) {
             UITableViewCell *cell = [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:section]];
             cell.accessoryType = [[selectedFont stringByDeletingPathExtension] isEqualToString:cell.textLabel.text] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
         }
         [preferences setObject:selectedFont forKey:selectedFontKey];
-        DoPostNotification();
+        CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), (CFStringRef)[NSString stringWithFormat:@"%@/ReloadPrefs", tweakIdentifier], NULL, NULL, YES);
     } else if (section == 1) {
         if (value == 0)
             [HBRespringController respring];
