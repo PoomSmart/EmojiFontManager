@@ -87,7 +87,7 @@
         footer2.backgroundColor = UIColor.clearColor;
         UILabel *lbl2 = [[UILabel alloc] initWithFrame:footer2.frame];
         lbl2.backgroundColor = [UIColor clearColor];
-        lbl2.text = @"©️ 2016 - 2019 Thatchapon Unprasert\n(@PoomSmart)";
+        lbl2.text = @"©️ 2016 - 2020 @PoomSmart";
         lbl2.textColor = UIColor.grayColor;
         lbl2.font = [UIFont systemFontOfSize:14.0];
         lbl2.textAlignment = NSTextAlignmentCenter;
