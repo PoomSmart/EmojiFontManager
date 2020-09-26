@@ -46,7 +46,7 @@ extern "C" CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
 
 CGFontRef (*CGFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = NULL;
 %hookf(CGFontRef, CGFontCreateWithPathAndName, CFStringRef path, CFStringRef name) {
-    if (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI"))) {
+    if (name && (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI")))) {
         NSString *newPath = getNewFontPath();
         if (newPath)
             return %orig((__bridge CFStringRef)newPath, name);
