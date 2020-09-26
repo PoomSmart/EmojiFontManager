@@ -6,26 +6,55 @@
 HBPreferences *preferences;
 NSString *selectedFont;
 
-NSString *emojiFontPath, *emojiFontPath2, *emojiFontPath3;
+NSString *emojiFontPath1, *emojiFontPath2, *emojiFontPath3, *emojiFontPath4;
 NSString *emojiFontFolder;
+
+static NSString *getNewFontPath() {
+    NSString *newPath = getPath(selectedFont);
+    if (newPath && !stringEqual(newPath, defaultName)) {
+        BOOL exist = fileExist(newPath);
+        if (!exist)
+            exist = fileExist(newPath = [newPath stringByReplacingOccurrencesOfString:@"ttf" withString:@"ttc"]);
+        if (exist) {
+            HBLogDebug(@"New emoji font path: %@", newPath);
+            return newPath;
+        }
+    }
+    return nil;
+}
+
+%group Path
 
 extern "C" CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
 %hookf(CFMutableArrayRef, CGFontCreateFontsWithPath, CFStringRef const path) {
     NSString *path_ = (__bridge NSString *)path;
-    if (path && (stringEqual(path_, emojiFontPath) || stringEqual(path_, emojiFontPath2) || stringEqual(path_, emojiFontPath3))) {
-        NSString *newPath = getPath(selectedFont);
-        if (newPath && !stringEqual(newPath, defaultName)) {
-            BOOL exist = fileExist(newPath);
-            if (!exist)
-                exist = fileExist(newPath = [newPath stringByReplacingOccurrencesOfString:@"ttf" withString:@"ttc"]);
-            if (exist) {
-                HBLogDebug(@"New emoji font path: %@", newPath);
-                return %orig((__bridge CFStringRef const)newPath);
-            }
-        }
+    if (path && (stringEqual(path_, emojiFontPath1)
+                || stringEqual(path_, emojiFontPath2)
+                || stringEqual(path_, emojiFontPath3)
+                || stringEqual(path_, emojiFontPath4)
+        )) {
+        NSString *newPath = getNewFontPath();
+        if (newPath)
+            return %orig((__bridge CFStringRef const)newPath);
     }
     return %orig(path);
 }
+
+%end
+
+%group PathAndName
+
+CGFontRef (*CGFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = NULL;
+%hookf(CGFontRef, CGFontCreateWithPathAndName, CFStringRef path, CFStringRef name) {
+    if (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI"))) {
+        NSString *newPath = getNewFontPath();
+        if (newPath)
+            return %orig((__bridge CFStringRef)newPath, name);
+    }
+    return %orig(path, name);
+}
+
+%end
 
 %group iOS83Up
 
@@ -49,23 +78,31 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
         [preferences registerObject:&selectedFont default:defaultName forKey:selectedFontKey];
         BOOL iOS82Up = isiOS82Up;
         emojiFontFolder = [[NSString stringWithFormat:@"/System/Library/Fonts/%@", iOS82Up ? @"Core" : @"Cache"] retain];
-        emojiFontPath = [[NSString stringWithFormat:@"%@/AppleColorEmoji%@.%@", emojiFontFolder, isiOS82 ? @"_2x" : @"@2x", isiOS10Up ? @"ttc" : @"ttf"] retain];
-        emojiFontPath2 = [[emojiFontPath stringByReplacingOccurrencesOfString:@"2x" withString:@"1x"] retain];
-        emojiFontPath3 = [[emojiFontPath stringByReplacingOccurrencesOfString:@"1x" withString:@""] retain];
+        emojiFontPath1 = [[NSString stringWithFormat:@"%@/AppleColorEmoji%@.%@", emojiFontFolder, isiOS82 ? @"_2x" : @"@2x", isiOS10Up ? @"ttc" : @"ttf"] retain];
+        emojiFontPath2 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"2x" withString:@"1x"] retain];
+        emojiFontPath3 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"1x" withString:@""] retain];
+        emojiFontPath4 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"@2x" withString:@""] retain];
+        MSImageRef ref = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
+        CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))_PSFindSymbolCallable(ref, "_CGFontCreateWithPathAndName");
+        if (CGFontCreateWithPathAndName != NULL) {
+            %init(PathAndName);
+        }
         if (isiOS83Up) {
             %init(iOS83Up);
         }
-        %init;
+        %init(Path);
     }
 }
 
 %dtor {
-    if (emojiFontPath)
-        [emojiFontPath autorelease];
+    if (emojiFontPath1)
+        [emojiFontPath1 autorelease];
     if (emojiFontPath2)
         [emojiFontPath2 autorelease];
     if (emojiFontPath3)
         [emojiFontPath3 autorelease];
+    if (emojiFontPath4)
+        [emojiFontPath4 autorelease];
     if (emojiFontFolder)
         [emojiFontFolder autorelease];
 }
