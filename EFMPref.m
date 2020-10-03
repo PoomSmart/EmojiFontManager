@@ -124,7 +124,7 @@
     if (section == 0)
         return allEmojiFonts.count + 1;
     if (section == [self numberOfSectionsInTableView:table] - 1)
-        return 1 + (isiOS11Up ? 0 : 1);
+        return 1 + (IS_IOS_OR_NEWER(iOS_11_0) ? 0 : 1);
     return 0;
 }
 

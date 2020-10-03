@@ -6,8 +6,14 @@
 HBPreferences *preferences;
 NSString *selectedFont;
 
-NSString *emojiFontPath1, *emojiFontPath2, *emojiFontPath3, *emojiFontPath4;
-NSString *emojiFontFolder;
+static NSString *getPath(NSString *font) {
+    if (font == nil) {
+        HBLogError(@"font name is nil");
+        return nil;
+    }
+    NSString *format = IS_IOS_OR_NEWER(iOS_10_0) ? @"%@/%@/AppleColorEmoji@2x.ttc" : @"%@/%@/AppleColorEmoji@2x.ttf";
+    return [NSString stringWithFormat:format, fontsPath, font];
+}
 
 static NSString *getNewFontPath() {
     NSString *newPath = getPath(selectedFont);
@@ -27,12 +33,7 @@ static NSString *getNewFontPath() {
 
 extern "C" CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
 %hookf(CFMutableArrayRef, CGFontCreateFontsWithPath, CFStringRef const path) {
-    NSString *path_ = (__bridge NSString *)path;
-    if (path && (stringEqual(path_, emojiFontPath1)
-                || stringEqual(path_, emojiFontPath2)
-                || stringEqual(path_, emojiFontPath3)
-                || stringEqual(path_, emojiFontPath4)
-        )) {
+    if (path && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
         NSString *newPath = getNewFontPath();
         if (newPath)
             return %orig((__bridge CFStringRef const)newPath);
@@ -75,12 +76,7 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
 
 CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 %hookf(CFMutableArrayRef, FPFontCreateFontsWithPath, CFStringRef path) {
-    NSString *path_ = (__bridge NSString *)path;
-    if (path && (stringEqual(path_, emojiFontPath1)
-                || stringEqual(path_, emojiFontPath2)
-                || stringEqual(path_, emojiFontPath3)
-                || stringEqual(path_, emojiFontPath4)
-        )) {
+    if (path && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
         NSString *newPath = getNewFontPath();
         if (newPath)
             return %orig((__bridge CFStringRef const)newPath);
@@ -97,14 +93,8 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
         [preferences registerObject:&selectedFont default:defaultName forKey:selectedFontKey];
         if ([preferences isKindOfClass:%c(HBPreferencesIPC)]) {
             NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"/var/mobile/Library/Preferences/%@.plist", tweakIdentifier]];
-            selectedFont = plist[selectedFontKey];
+            selectedFont = [plist[selectedFontKey] retain];
         }
-        BOOL iOS82Up = IS_IOS_OR_NEWER(iOS_8_2);
-        emojiFontFolder = [[NSString stringWithFormat:@"/System/Library/Fonts/%@", iOS82Up ? @"Core" : @"Cache"] retain];
-        emojiFontPath1 = [[NSString stringWithFormat:@"%@/AppleColorEmoji%@.%@", emojiFontFolder, isiOS82 ? @"_2x" : @"@2x", isiOS10Up ? @"ttc" : @"ttf"] retain];
-        emojiFontPath2 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"2x" withString:@"1x"] retain];
-        emojiFontPath3 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"1x" withString:@""] retain];
-        emojiFontPath4 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"@2x" withString:@""] retain];
         MSImageRef cgRef = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
         CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))_PSFindSymbolCallable(cgRef, "_CGFontCreateWithPathAndName");
         if (CGFontCreateWithPathAndName != NULL) {
@@ -128,14 +118,6 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 }
 
 %dtor {
-    if (emojiFontPath1)
-        [emojiFontPath1 autorelease];
-    if (emojiFontPath2)
-        [emojiFontPath2 autorelease];
-    if (emojiFontPath3)
-        [emojiFontPath3 autorelease];
-    if (emojiFontPath4)
-        [emojiFontPath4 autorelease];
-    if (emojiFontFolder)
-        [emojiFontFolder autorelease];
+    if (selectedFont)
+        [selectedFont autorelease];
 }

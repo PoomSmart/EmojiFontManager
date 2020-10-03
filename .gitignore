@@ -2,3 +2,4 @@
 obj
 *.bak
 packages/*
+.DS_Store
