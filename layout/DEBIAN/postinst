@@ -26,3 +26,5 @@ do
 done
 
 IFS=$SAVEIFS
+
+killall -9 com.apple.WebKit.WebContent || true

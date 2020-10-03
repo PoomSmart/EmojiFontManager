@@ -11,6 +11,6 @@ NSString *getPath(NSString *font) {
         HBLogError(@"font name is nil");
         return nil;
     }
-    NSString *format = isiOS10Up ? @"%@/%@/AppleColorEmoji@2x.ttc" : @"%@/%@/AppleColorEmoji@2x.ttf";
+    NSString *format = IS_IOS_OR_NEWER(iOS_10_0) ? @"%@/%@/AppleColorEmoji@2x.ttc" : @"%@/%@/AppleColorEmoji@2x.ttf";
     return [NSString stringWithFormat:format, fontsPath, font];
 }

@@ -71,21 +71,54 @@ extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLR
 
 %end
 
+%group FontParser
+
+CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
+%hookf(CFMutableArrayRef, FPFontCreateFontsWithPath, CFStringRef path) {
+    NSString *path_ = (__bridge NSString *)path;
+    if (path && (stringEqual(path_, emojiFontPath1)
+                || stringEqual(path_, emojiFontPath2)
+                || stringEqual(path_, emojiFontPath3)
+                || stringEqual(path_, emojiFontPath4)
+        )) {
+        NSString *newPath = getNewFontPath();
+        if (newPath)
+            return %orig((__bridge CFStringRef const)newPath);
+    }
+    return %orig(path);
+}
+
+%end
+
 %ctor {
-    if (_isTarget(TargetTypeApps, @[@"com.apple.WebKit.WebContent"])) {
+    if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"])) {
         dlopen("/Library/Frameworks/Cephei.framework/Cephei", RTLD_NOW);
         preferences = [[NSClassFromString(@"HBPreferences") alloc] initWithIdentifier:tweakIdentifier];
         [preferences registerObject:&selectedFont default:defaultName forKey:selectedFontKey];
-        BOOL iOS82Up = isiOS82Up;
+        if ([preferences isKindOfClass:%c(HBPreferencesIPC)]) {
+            NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"/var/mobile/Library/Preferences/%@.plist", tweakIdentifier]];
+            selectedFont = plist[selectedFontKey];
+        }
+        BOOL iOS82Up = IS_IOS_OR_NEWER(iOS_8_2);
         emojiFontFolder = [[NSString stringWithFormat:@"/System/Library/Fonts/%@", iOS82Up ? @"Core" : @"Cache"] retain];
         emojiFontPath1 = [[NSString stringWithFormat:@"%@/AppleColorEmoji%@.%@", emojiFontFolder, isiOS82 ? @"_2x" : @"@2x", isiOS10Up ? @"ttc" : @"ttf"] retain];
         emojiFontPath2 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"2x" withString:@"1x"] retain];
         emojiFontPath3 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"1x" withString:@""] retain];
         emojiFontPath4 = [[emojiFontPath1 stringByReplacingOccurrencesOfString:@"@2x" withString:@""] retain];
-        MSImageRef ref = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
-        CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))_PSFindSymbolCallable(ref, "_CGFontCreateWithPathAndName");
+        MSImageRef cgRef = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
+        CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))_PSFindSymbolCallable(cgRef, "_CGFontCreateWithPathAndName");
         if (CGFontCreateWithPathAndName != NULL) {
+            HBLogDebug(@"Init CGFontCreateWithPathAndName hook");
             %init(PathAndName);
+        }
+        const char *fontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib";
+        if (dlopen(fontParserPath, RTLD_LAZY)) {
+            MSImageRef fontParserRef = MSGetImageByName(fontParserPath);
+            FPFontCreateFontsWithPath = (CFMutableArrayRef (*)(CFStringRef))_PSFindSymbolCallable(fontParserRef, "_FPFontCreateFontsWithPath");
+            if (FPFontCreateFontsWithPath != NULL) {
+                HBLogDebug(@"Init FPFontCreateFontsWithPath hook");
+                %init(FontParser);
+            }
         }
         if (isiOS83Up) {
             %init(iOS83Up);
