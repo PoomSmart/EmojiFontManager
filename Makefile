@@ -1,5 +1,5 @@
 TARGET = iphone:clang:latest:6.0
-PACKAGE_VERSION = 0.0.8.3
+PACKAGE_VERSION = 0.0.8.4
 ARCHS = armv7 arm64 arm64e
 
 include $(THEOS)/makefiles/common.mk
@@ -16,7 +16,7 @@ EFMPref_CCFLAGS = -std=c++11 -stdlib=libc++
 EFMPref_INSTALL_PATH = /Library/PreferenceBundles
 EFMPref_LIBRARIES = EmojiLibrary
 EFMPref_FRAMEWORKS = CoreGraphics UIKit
-EFMPref_EXTRA_FRAMEWORKS = Cephei CepheiPrefs
+EFMPref_EXTRA_FRAMEWORKS = Cephei
 EFMPref_PRIVATE_FRAMEWORKS = Preferences
 
 include $(THEOS_MAKE_PATH)/bundle.mk

@@ -3,8 +3,7 @@
 #import "Prefs.h"
 #import "../PS.h"
 
-HBPreferences *preferences;
-NSString *selectedFont;
+static NSString *selectedFont;
 
 static NSString *getPath(NSString *font) {
     if (font == nil) {
@@ -16,6 +15,8 @@ static NSString *getPath(NSString *font) {
 }
 
 static NSString *getNewFontPath() {
+    const void *value = CFPreferencesCopyAppValue(selectedFontKey, domain);
+    selectedFont = value ? CFBridgingRelease(value) : defaultName;
     NSString *newPath = getPath(selectedFont);
     if (newPath && !stringEqual(newPath, defaultName)) {
         BOOL exist = fileExist(newPath);
@@ -88,16 +89,9 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 
 %ctor {
     if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"])) {
-        dlopen("/Library/Frameworks/Cephei.framework/Cephei", RTLD_NOW);
-        preferences = [[NSClassFromString(@"HBPreferences") alloc] initWithIdentifier:tweakIdentifier];
-        [preferences registerObject:&selectedFont default:defaultName forKey:selectedFontKey];
-        if ([preferences isKindOfClass:%c(HBPreferencesIPC)]) {
-            NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"/var/mobile/Library/Preferences/%@.plist", tweakIdentifier]];
-            selectedFont = [plist[selectedFontKey] retain];
-        }
         MSImageRef cgRef = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
         CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))_PSFindSymbolCallable(cgRef, "_CGFontCreateWithPathAndName");
-        if (CGFontCreateWithPathAndName != NULL) {
+        if (CGFontCreateWithPathAndName) {
             HBLogDebug(@"Init CGFontCreateWithPathAndName hook");
             %init(PathAndName);
         }
@@ -115,9 +109,4 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
         }
         %init(Path);
     }
-}
-
-%dtor {
-    if (selectedFont)
-        [selectedFont autorelease];
 }

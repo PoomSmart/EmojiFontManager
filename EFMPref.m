@@ -13,7 +13,6 @@
 @interface EFMPrefController : PSViewController <UITableViewDataSource, UITableViewDelegate> {
     NSArray <NSString *> *allEmojiFonts;
     NSString *selectedFont;
-    HBPreferences *preferences;
 }
 @end
 
@@ -22,7 +21,6 @@
 - (id)init {
     if (self == [super init]) {
         self.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithTitle:@"Reload" style:UIBarButtonItemStylePlain target:self action:@selector(reloadTable)] autorelease];
-        preferences = [[HBPreferences alloc] initWithIdentifier:tweakIdentifier];
         [self reloadFonts];
         [self reloadSelectedFont];
     }
@@ -51,7 +49,8 @@
 }
 
 - (void)reloadSelectedFont {
-    selectedFont = [[preferences objectForKey:selectedFontKey default:defaultName] retain];
+    id value = CFPreferencesCopyAppValue(selectedFontKey, domain);
+    selectedFont = value ? CFBridgingRelease(value) : defaultName;
 }
 
 - (void)reloadTable {
@@ -157,8 +156,8 @@
             UITableViewCell *cell = [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:section]];
             cell.accessoryType = [[selectedFont stringByDeletingPathExtension] isEqualToString:cell.textLabel.text] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
         }
-        [preferences setObject:selectedFont forKey:selectedFontKey];
-        CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), (CFStringRef)[NSString stringWithFormat:@"%@/ReloadPrefs", tweakIdentifier], NULL, NULL, YES);
+        CFPreferencesSetValue(selectedFontKey, (__bridge CFStringRef)selectedFont, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+        CFPreferencesAppSynchronize(domain);
     } else if (section == 1) {
         if (value == 0)
             [HBRespringController respring];
