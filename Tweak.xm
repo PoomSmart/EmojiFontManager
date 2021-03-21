@@ -90,21 +90,21 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 %ctor {
     if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"])) {
         MSImageRef cgRef = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
-        CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))_PSFindSymbolCallable(cgRef, "_CGFontCreateWithPathAndName");
+        CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))MSFindSymbol(cgRef, "_CGFontCreateWithPathAndName");
         if (CGFontCreateWithPathAndName) {
             HBLogDebug(@"Init CGFontCreateWithPathAndName hook");
             %init(PathAndName);
         }
         const char *fontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib";
-        if (dlopen(fontParserPath, RTLD_LAZY)) {
+        if (dlopen(fontParserPath, RTLD_NOW)) {
             MSImageRef fontParserRef = MSGetImageByName(fontParserPath);
-            FPFontCreateFontsWithPath = (CFMutableArrayRef (*)(CFStringRef))_PSFindSymbolCallable(fontParserRef, "_FPFontCreateFontsWithPath");
+            FPFontCreateFontsWithPath = (CFMutableArrayRef (*)(CFStringRef))MSFindSymbol(fontParserRef, "_FPFontCreateFontsWithPath");
             if (FPFontCreateFontsWithPath != NULL) {
                 HBLogDebug(@"Init FPFontCreateFontsWithPath hook");
                 %init(FontParser);
             }
         }
-        if (isiOS83Up) {
+        if (IS_IOS_OR_NEWER(iOS_8_3)) {
             %init(iOS83Up);
         }
         %init(Path);

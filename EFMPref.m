@@ -5,6 +5,7 @@
 #import <Cephei/HBRespringController.h>
 #import "Prefs.h"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
+#import <HBLog.h>
 #import <objc/runtime.h>
 #import <dlfcn.h>
 
@@ -20,7 +21,7 @@
 
 - (id)init {
     if (self == [super init]) {
-        self.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithTitle:@"Reload" style:UIBarButtonItemStylePlain target:self action:@selector(reloadTable)] autorelease];
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Reload" style:UIBarButtonItemStylePlain target:self action:@selector(reloadTable)];
         [self reloadFonts];
         [self reloadSelectedFont];
     }
@@ -41,16 +42,15 @@
     tableView.delegate = self;
     tableView.rowHeight = RowHeight;
     self.view = tableView;
-    [tableView release];
 }
 
 - (void)reloadFonts {
-    allEmojiFonts = [[self allEmojiFonts] retain];
+    allEmojiFonts = [self allEmojiFonts];
 }
 
 - (void)reloadSelectedFont {
-    id value = CFPreferencesCopyAppValue(selectedFontKey, domain);
-    selectedFont = value ? CFBridgingRelease(value) : defaultName;
+    id value = CFBridgingRelease(CFPreferencesCopyAppValue(selectedFontKey, domain));
+    selectedFont = value ? value : defaultName;
 }
 
 - (void)reloadTable {
@@ -81,7 +81,7 @@
 
 - (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
     if (section == [self numberOfSectionsInTableView:tableView] - 1) {
-        UIView *footer2 = [[[UIView alloc] initWithFrame:CGRectMake(0.0, 0.0, 320.0, 90.0)] autorelease];
+        UIView *footer2 = [[UIView alloc] initWithFrame:CGRectMake(0.0, 0.0, 320.0, 90.0)];
         footer2.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         footer2.backgroundColor = UIColor.clearColor;
         UILabel *lbl2 = [[UILabel alloc] initWithFrame:footer2.frame];
@@ -94,7 +94,6 @@
         lbl2.numberOfLines = 2;
         lbl2.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
         [footer2 addSubview:lbl2];
-        [lbl2 release];
         return footer2;
     }
     return nil;
@@ -129,14 +128,14 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 0) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"selection"] ? : [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"selection"] autorelease];
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"selection"] ? : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"selection"];
         cell.textLabel.textAlignment = NSTextAlignmentLeft;
         NSString *value = indexPath.row < allEmojiFonts.count ? allEmojiFonts[indexPath.row] : defaultName;
         cell.textLabel.text = [value stringByDeletingPathExtension];
         cell.accessoryType = [selectedFont isEqualToString:value] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
         return cell;
     } else if (indexPath.section == [self numberOfSectionsInTableView:tableView] - 1) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"info"] ? : [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"info"] autorelease];
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"info"] ? : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"info"];
         cell.textLabel.text = indexPath.row == 0 ? @"Respring ❄️" : @"Reset emoji preferences";
         cell.textLabel.font = [UIFont boldSystemFontOfSize:17.0];
         cell.textLabel.textAlignment = NSTextAlignmentCenter;
