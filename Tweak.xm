@@ -1,7 +1,9 @@
 #define CHECK_TARGET
 #define CHECK_EXCEPTIONS
 #import "Prefs.h"
-#import "../PS.h"
+#import <CoreGraphics/CoreGraphics.h>
+#import <HBLog.h>
+#import <dlfcn.h>
 
 static NSString *selectedFont;
 

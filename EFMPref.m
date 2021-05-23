@@ -5,13 +5,12 @@
 #import <Cephei/HBRespringController.h>
 #import "Prefs.h"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
-#import <HBLog.h>
-#import <objc/runtime.h>
-#import <dlfcn.h>
 
-#define RowHeight 44.0
+@interface PSTableCell (Additions)
+- (void)setChecked:(BOOL)checked;
+@end
 
-@interface EFMPrefController : PSViewController <UITableViewDataSource, UITableViewDelegate> {
+@interface EFMPrefController : PSListController {
     NSArray <NSString *> *allEmojiFonts;
     NSString *selectedFont;
 }
@@ -19,29 +18,40 @@
 
 @implementation EFMPrefController
 
-- (id)init {
-    if (self == [super init]) {
-        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Reload" style:UIBarButtonItemStylePlain target:self action:@selector(reloadTable)];
+- (NSMutableArray *)specifiers {
+    if (!_specifiers) {
+        _specifiers = [NSMutableArray new];
+        PSSpecifier *fontGroupSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Available Fonts" target:nil set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+        [_specifiers addObject:fontGroupSpecifier];
+
         [self reloadFonts];
         [self reloadSelectedFont];
+        PSSpecifier *defaultFontSpecifier = [PSSpecifier preferenceSpecifierNamed:defaultName target:nil set:nil get:nil detail:nil cell:PSStaticTextCell edit:nil];
+        [defaultFontSpecifier setProperty:defaultName forKey:@"font"];
+        [defaultFontSpecifier setProperty:@YES forKey:@"enabled"];
+        [_specifiers addObject:defaultFontSpecifier];
+        for (NSString *font in allEmojiFonts) {
+            PSSpecifier *fontSpecifier = [PSSpecifier preferenceSpecifierNamed:font target:nil set:nil get:nil detail:nil cell:PSStaticTextCell edit:nil];
+            [fontSpecifier setProperty:font forKey:@"font"];
+            [fontSpecifier setProperty:@YES forKey:@"enabled"];
+            [_specifiers addObject:fontSpecifier];
+        }
+
+        PSSpecifier *footerSpecifier = [PSSpecifier emptyGroupSpecifier];
+        [footerSpecifier setProperty:@"©️ 2016 - 2021 @PoomSmart" forKey:@"footerText"];
+        [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
+        [_specifiers addObject:footerSpecifier];
+
+        PSSpecifier *respringSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Respring ❄️" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+        [respringSpecifier setButtonAction:@selector(respring)];
+        [_specifiers addObject:respringSpecifier];
+
+        PSSpecifier *resetSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset emoji preferences" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+        [resetSpecifier setButtonAction:@selector(reset)];
+        [_specifiers addObject:resetSpecifier];
     }
-    return self;
-}
 
-- (UITableView *)tableView {
-    return (UITableView *)self.view;
-}
-
-- (UITableView *)table {
-    return self.tableView;
-}
-
-- (void)loadView {
-    UITableView *tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleGrouped];
-    tableView.dataSource = self;
-    tableView.delegate = self;
-    tableView.rowHeight = RowHeight;
-    self.view = tableView;
+    return _specifiers;
 }
 
 - (void)reloadFonts {
@@ -53,54 +63,9 @@
     selectedFont = value ? value : defaultName;
 }
 
-- (void)reloadTable {
-    [self reloadFonts];
-    [self.tableView reloadData];
-}
-
 - (void)setSpecifier:(PSSpecifier *)specifier {
     [super setSpecifier:specifier];
     self.navigationItem.title = @"EFM 🚀";
-    if ([self isViewLoaded]) {
-        [(UITableView *)self.view setRowHeight:RowHeight];
-        [(UITableView *)self.view reloadData];
-    }
-}
-
-- (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
-    return UITableViewCellEditingStyleNone;
-}
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)table {
-    return 2;
-}
-
-- (NSString *)tableView:(UITableView *)table titleForHeaderInSection:(NSInteger)section {
-    return section == 0 ? @"Available Fonts" : nil;
-}
-
-- (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
-    if (section == [self numberOfSectionsInTableView:tableView] - 1) {
-        UIView *footer2 = [[UIView alloc] initWithFrame:CGRectMake(0.0, 0.0, 320.0, 90.0)];
-        footer2.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        footer2.backgroundColor = UIColor.clearColor;
-        UILabel *lbl2 = [[UILabel alloc] initWithFrame:footer2.frame];
-        lbl2.backgroundColor = [UIColor clearColor];
-        lbl2.text = @"©️ 2016 - 2020 @PoomSmart";
-        lbl2.textColor = UIColor.grayColor;
-        lbl2.font = [UIFont systemFontOfSize:14.0];
-        lbl2.textAlignment = NSTextAlignmentCenter;
-        lbl2.lineBreakMode = NSLineBreakByWordWrapping;
-        lbl2.numberOfLines = 2;
-        lbl2.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
-        [footer2 addSubview:lbl2];
-        return footer2;
-    }
-    return nil;
-}
-
-- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    return section == [self numberOfSectionsInTableView:tableView] - 1 ? 100.0 : 0.0;
 }
 
 - (NSString *)_fontsPath {
@@ -110,59 +75,63 @@
 - (NSArray *)allEmojiFonts {
     NSError *error = nil;
     NSArray <NSString *> *contents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[self _fontsPath] error:&error];
-    if (error) {
-        HBLogDebug(@"%@", [error localizedDescription]);
+    if (error)
         return @[];
-    }
     contents = [contents filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF endswith %@", @"font"]];
     return contents;
 }
 
-- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {
-    if (section == 0)
-        return allEmojiFonts.count + 1;
-    if (section == [self numberOfSectionsInTableView:table] - 1)
-        return 1 + (IS_IOS_OR_NEWER(iOS_11_0) ? 0 : 1);
-    return 0;
+- (PSTableCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    PSTableCell *tableCell = (PSTableCell *)[super tableView:tableView cellForRowAtIndexPath:indexPath];
+
+    if (indexPath.section == 0) {
+        PSSpecifier *specifier = [tableCell specifier];
+        NSString *font = [specifier propertyForKey:@"font"];
+
+        [tableCell setChecked:[selectedFont isEqualToString:font]];
+    }
+
+    return tableCell;
 }
 
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (indexPath.section == 0) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"selection"] ? : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"selection"];
-        cell.textLabel.textAlignment = NSTextAlignmentLeft;
-        NSString *value = indexPath.row < allEmojiFonts.count ? allEmojiFonts[indexPath.row] : defaultName;
-        cell.textLabel.text = [value stringByDeletingPathExtension];
-        cell.accessoryType = [selectedFont isEqualToString:value] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
-        return cell;
-    } else if (indexPath.section == [self numberOfSectionsInTableView:tableView] - 1) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"info"] ? : [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"info"];
-        cell.textLabel.text = indexPath.row == 0 ? @"Respring ❄️" : @"Reset emoji preferences";
-        cell.textLabel.font = [UIFont boldSystemFontOfSize:17.0];
-        cell.textLabel.textAlignment = NSTextAlignmentCenter;
-        return cell;
-    }
-    return nil;
+- (PSSpecifier *)specifierForFontWithName:(NSString *)fontName {
+    __block PSSpecifier *specifierToReturn;
+    [_specifiers enumerateObjectsUsingBlock:^(PSSpecifier* specifier, NSUInteger idx, BOOL *stop)
+    {
+        NSString *specifierFont = [specifier propertyForKey:@"font"];
+        if ([fontName isEqualToString:specifierFont]) {
+            specifierToReturn = specifier;
+            *stop = YES;
+        }
+    }];
+    return specifierToReturn;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    NSInteger section = indexPath.section;
-    NSInteger value = indexPath.row;
-    if (section == 0) {
-        NSString *font = value < allEmojiFonts.count ? allEmojiFonts[value] : defaultName;
-        selectedFont = font;
-        for (NSInteger i = 0; i <= allEmojiFonts.count; ++i) {
-            UITableViewCell *cell = [tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:i inSection:section]];
-            cell.accessoryType = [[selectedFont stringByDeletingPathExtension] isEqualToString:cell.textLabel.text] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
-        }
-        CFPreferencesSetValue(selectedFontKey, (__bridge CFStringRef)selectedFont, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-        CFPreferencesAppSynchronize(domain);
-    } else if (section == 1) {
-        if (value == 0)
-            [HBRespringController respring];
-        else
-            [PSEmojiUtilities resetEmojiPreferences];
+    [super tableView:tableView didSelectRowAtIndexPath:indexPath];
+    if (indexPath.section != 0) return;
+    if (selectedFont) {
+        PSSpecifier *previousSpecifier = [self specifierForFontWithName:selectedFont];
+        NSIndexPath *previousIndexPath = [self indexPathForIndex:[self indexOfSpecifier:previousSpecifier]];
+        if ([[tableView indexPathsForVisibleRows] containsObject:previousIndexPath])
+            [tableView cellForRowAtIndexPath:previousIndexPath].accessoryType = UITableViewCellAccessoryNone;
     }
+
+    PSSpecifier *specifierOfCell = [self specifierAtIndex:[self indexForIndexPath:indexPath]];
+    selectedFont = [specifierOfCell propertyForKey:@"font"];
+    PSTableCell *targetCell = [tableView cellForRowAtIndexPath:indexPath];
+    targetCell.accessoryType = UITableViewCellAccessoryCheckmark;
+
+    CFPreferencesSetValue(selectedFontKey, (__bridge CFStringRef)selectedFont, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+    CFPreferencesAppSynchronize(domain);
+}
+
+- (void)respring {
+    [HBRespringController respring];
+}
+
+- (void)reset {
+    [PSEmojiUtilities resetEmojiPreferences];
 }
 
 @end
