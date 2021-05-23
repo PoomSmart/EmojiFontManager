@@ -1,7 +1,7 @@
 Package: com.ps.emojifontmanager
 Name: EmojiFontManager
 Depends: mobilesubstrate, preferenceloader, com.ps.emojilibrary, firmware (>= 6.0), ws.hbang.common (>= 1.16)
-Version: 0.0.1
+Version: 1.0.0
 Architecture: iphoneos-arm
 Description: Emoji font override and management.
 Maintainer: PoomSmart
