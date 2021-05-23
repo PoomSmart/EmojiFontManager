@@ -1,5 +1,3 @@
 .theos
-obj
-*.bak
-packages/*
+packages
 .DS_Store
