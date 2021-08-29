@@ -1,14 +1,9 @@
-#import <UIKit/UIKit.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSTableCell.h>
 #import <Cephei/HBRespringController.h>
 #import "Prefs.h"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
-
-@interface PSTableCell (Additions)
-- (void)setChecked:(BOOL)checked;
-@end
 
 @interface EFMPrefController : PSListController {
     NSArray <NSString *> *allEmojiFonts;
@@ -42,12 +37,10 @@
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 
-        PSSpecifier *respringSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Respring ❄️" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
-        [respringSpecifier setButtonAction:@selector(respring)];
+        PSSpecifier *respringSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Respring ❄️" target:self set:@selector(respring:) get:nil detail:nil cell:PSButtonCell edit:nil];
         [_specifiers addObject:respringSpecifier];
 
-        PSSpecifier *resetSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset emoji preferences" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
-        [resetSpecifier setButtonAction:@selector(reset)];
+        PSSpecifier *resetSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset emoji preferences" target:self set:@selector(reset:) get:nil detail:nil cell:PSButtonCell edit:nil];
         [_specifiers addObject:resetSpecifier];
     }
 
@@ -126,11 +119,11 @@
     CFPreferencesAppSynchronize(domain);
 }
 
-- (void)respring {
+- (void)respring:(PSSpecifier *)specifier {
     [HBRespringController respring];
 }
 
-- (void)reset {
+- (void)reset:(PSSpecifier *)specifier {
     [PSEmojiUtilities resetEmojiPreferences];
 }
 

@@ -1,22 +1,22 @@
 TARGET = iphone:clang:latest:6.0
-PACKAGE_VERSION = 1.0.0
-ARCHS = armv7 arm64 arm64e
+PACKAGE_VERSION = 1.1.0
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = EmojiFontManager
-EmojiFontManager_FILES = Tweak.xm
+$(TWEAK_NAME)_FILES = Tweak.x
+$(TWEAK_NAME)_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 BUNDLE_NAME = EFMPref
-EFMPref_FILES = EFMPref.m
-EFMPref_INSTALL_PATH = /Library/PreferenceBundles
-EFMPref_CFLAGS = -fobjc-arc
-EFMPref_LIBRARIES = EmojiLibrary
-EFMPref_FRAMEWORKS = UIKit
-EFMPref_EXTRA_FRAMEWORKS = Cephei
-EFMPref_PRIVATE_FRAMEWORKS = Preferences
+$(BUNDLE_NAME)_FILES = EFMPref.m
+$(BUNDLE_NAME)_INSTALL_PATH = /Library/PreferenceBundles
+$(BUNDLE_NAME)_CFLAGS = -fobjc-arc
+$(BUNDLE_NAME)_LIBRARIES = EmojiLibrary
+$(BUNDLE_NAME)_FRAMEWORKS = UIKit
+$(BUNDLE_NAME)_EXTRA_FRAMEWORKS = Cephei
+$(BUNDLE_NAME)_PRIVATE_FRAMEWORKS = Preferences
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

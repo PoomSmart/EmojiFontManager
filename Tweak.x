@@ -18,9 +18,9 @@ static NSString *getPath(NSString *font) {
 
 static NSString *getNewFontPath() {
     const void *value = CFPreferencesCopyAppValue(selectedFontKey, domain);
-    selectedFont = value ? CFBridgingRelease(value) : defaultName;
+    selectedFont = value ? (__bridge NSString *)value : defaultName;
     NSString *newPath = getPath(selectedFont);
-    if (newPath && !stringEqual(newPath, defaultName)) {
+    if (newPath && ![newPath isEqualToString:defaultName]) {
         BOOL exist = fileExist(newPath);
         if (!exist)
             exist = fileExist(newPath = [newPath stringByReplacingOccurrencesOfString:@"ttf" withString:@"ttc"]);
@@ -34,7 +34,7 @@ static NSString *getNewFontPath() {
 
 %group Path
 
-extern "C" CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
+extern CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
 %hookf(CFMutableArrayRef, CGFontCreateFontsWithPath, CFStringRef const path) {
     if (path && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
         NSString *newPath = getNewFontPath();
@@ -62,9 +62,9 @@ CGFontRef (*CGFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
 
 %group iOS83Up
 
-extern "C" CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, CFStringRef);
+extern CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, CFStringRef);
 %hookf(CFURLRef, CFURLCreateCopyAppendingPathExtension, CFAllocatorRef allocator, CFURLRef url, CFStringRef extension) {
-    if (url && CFStringEqual(extension, CFSTR("ccf")) && !stringEqual(selectedFont, defaultName)) {
+    if (url && CFStringEqual(extension, CFSTR("ccf")) && ![selectedFont isEqualToString:defaultName]) {
         CFStringRef path = CFURLCopyPath(url);
         if (CFStringFind(path, CFSTR("/System/Library/Fonts/Core/AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
             extension = CFSTR("null");
@@ -92,7 +92,7 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 %ctor {
     if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"])) {
         MSImageRef cgRef = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
-        CGFontCreateWithPathAndName = (CGFontRef (*)(CFStringRef, CFStringRef))MSFindSymbol(cgRef, "_CGFontCreateWithPathAndName");
+        CGFontCreateWithPathAndName = MSFindSymbol(cgRef, "_CGFontCreateWithPathAndName");
         if (CGFontCreateWithPathAndName) {
             HBLogDebug(@"Init CGFontCreateWithPathAndName hook");
             %init(PathAndName);
@@ -100,7 +100,7 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
         const char *fontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib";
         if (dlopen(fontParserPath, RTLD_NOW)) {
             MSImageRef fontParserRef = MSGetImageByName(fontParserPath);
-            FPFontCreateFontsWithPath = (CFMutableArrayRef (*)(CFStringRef))MSFindSymbol(fontParserRef, "_FPFontCreateFontsWithPath");
+            FPFontCreateFontsWithPath = MSFindSymbol(fontParserRef, "_FPFontCreateFontsWithPath");
             if (FPFontCreateFontsWithPath != NULL) {
                 HBLogDebug(@"Init FPFontCreateFontsWithPath hook");
                 %init(FontParser);
