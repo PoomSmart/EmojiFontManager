@@ -37,10 +37,10 @@
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 
-        PSSpecifier *respringSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Respring ❄️" target:self set:@selector(respring:) get:nil detail:nil cell:PSButtonCell edit:nil];
+        PSSpecifier *respringSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Respring ❄️" target:nil set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
         [_specifiers addObject:respringSpecifier];
 
-        PSSpecifier *resetSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset emoji preferences" target:self set:@selector(reset:) get:nil detail:nil cell:PSButtonCell edit:nil];
+        PSSpecifier *resetSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Reset emoji preferences" target:nil set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
         [_specifiers addObject:resetSpecifier];
     }
 
@@ -102,7 +102,17 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [super tableView:tableView didSelectRowAtIndexPath:indexPath];
-    if (indexPath.section != 0) return;
+    if (indexPath.section != 0) {
+        switch (indexPath.row) {
+            case 0:
+                [HBRespringController respring];
+                break;
+            case 1:
+                [PSEmojiUtilities resetEmojiPreferences];
+                break;
+        }
+        return;
+    }
     if (selectedFont) {
         PSSpecifier *previousSpecifier = [self specifierForFontWithName:selectedFont];
         NSIndexPath *previousIndexPath = [self indexPathForIndex:[self indexOfSpecifier:previousSpecifier]];
@@ -117,14 +127,6 @@
 
     CFPreferencesSetValue(selectedFontKey, (__bridge CFStringRef)selectedFont, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
     CFPreferencesAppSynchronize(domain);
-}
-
-- (void)respring:(PSSpecifier *)specifier {
-    [HBRespringController respring];
-}
-
-- (void)reset:(PSSpecifier *)specifier {
-    [PSEmojiUtilities resetEmojiPreferences];
 }
 
 @end
