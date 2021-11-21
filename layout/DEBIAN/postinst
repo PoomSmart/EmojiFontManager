@@ -19,7 +19,6 @@ do
         EFM_FONT_PATH="${EFM_FONT_PATH/.theme/.font}"
         ln -sf "$theme/ANEMFontsOverride" "${EFM_FONT_PATH}"
     fi
-
 done
 
 killall -9 com.apple.WebKit.WebContent || true
