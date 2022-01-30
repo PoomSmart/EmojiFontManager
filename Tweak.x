@@ -3,7 +3,6 @@
 #import "Prefs.h"
 #import "../PSPrefs/PSPrefs.x"
 #import <CoreGraphics/CoreGraphics.h>
-#import <HBLog.h>
 #import <dlfcn.h>
 
 NSString *selectedFont;
@@ -19,6 +18,8 @@ static NSString *getPath(NSString *font) {
 
 static NSString *getNewFontPath() {
     const void *value = CFPreferencesCopyAppValue(selectedFontKey, domain);
+    if (value == NULL)
+        value = CFPreferencesCopyValue(selectedFontKey, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
     if (value == NULL) {
         GetPrefs();
         selectedFont = PSSettings[(__bridge NSString *)selectedFontKey];
@@ -43,8 +44,10 @@ static NSString *getNewFontPath() {
 
 extern CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
 %hookf(CFMutableArrayRef, CGFontCreateFontsWithPath, CFStringRef const path) {
-    if (path && newFontPath && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
+    if (path && newFontPath && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
+        HBLogDebug(@"Emoji font overridden at CGFontCreateFontsWithPath");
         return %orig((__bridge CFStringRef const)newFontPath);
+    }
     return %orig(path);
 }
 
@@ -54,8 +57,10 @@ extern CFMutableArrayRef CGFontCreateFontsWithPath(CFStringRef);
 
 CGFontRef (*CGFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = NULL;
 %hookf(CGFontRef, CGFontCreateWithPathAndName, CFStringRef path, CFStringRef name) {
-    if (name && newFontPath && (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI"))))
+    if (name && newFontPath && (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI")))) {
+        HBLogDebug(@"Emoji font overridden at CGFontCreateWithPathAndName");
         return %orig((__bridge CFStringRef)newFontPath, name);
+    }
     return %orig(path, name);
 }
 
@@ -80,8 +85,10 @@ extern CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, 
 
 CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 %hookf(CFMutableArrayRef, FPFontCreateFontsWithPath, CFStringRef path) {
-    if (path && newFontPath && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
+    if (path && newFontPath && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
+        HBLogDebug(@"Emoji font overridden at FPFontCreateFontsWithPath");
         return %orig((__bridge CFStringRef const)newFontPath);
+    }
     return %orig(path);
 }
 
