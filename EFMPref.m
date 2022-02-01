@@ -38,6 +38,8 @@
             @"CoreAddition/AppleColorEmoji-160px.ttc",
             @"Core/AppleColorEmoji@2x.ttc",
             @"Core/AppleColorEmoji.ttc",
+            @"Core/AppleColorEmoji@2x.ttf",
+            @"Core/AppleColorEmoji.ttf",
             @"Cache/AppleColorEmoji@2x.ttf",
             @"Cache/AppleColorEmoji.ttf",
             @"Cache/AppleColorEmoji_2x.ttf",
