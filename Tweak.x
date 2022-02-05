@@ -1,8 +1,9 @@
 #define CHECK_TARGET
-#define CHECK_EXCEPTIONS
+#define CHECK_WHITELIST
 #import "Prefs.h"
 #import "../PSPrefs/PSPrefs.x"
 #import <CoreGraphics/CoreGraphics.h>
+#import <HBLog.h>
 #import <dlfcn.h>
 
 NSString *selectedFont;
@@ -121,7 +122,7 @@ CFMutableArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 // %end
 
 %ctor {
-    if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"])) {
+    if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"], nil)) {
         newFontPath = getNewFontPath();
         MSImageRef cgRef = MSGetImageByName("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics");
         CGFontCreateWithPathAndName = MSFindSymbol(cgRef, "_CGFontCreateWithPathAndName");
