@@ -33,26 +33,7 @@
         }
 
         PSSpecifier *footerSpecifier = [PSSpecifier emptyGroupSpecifier];
-        NSString *defaultEmojiFontPath;
-        NSArray <NSString *> *knownEmojiFontPaths = @[
-            @"CoreAddition/AppleColorEmoji-160px.ttc",
-            @"Core/AppleColorEmoji@2x.ttc",
-            @"Core/AppleColorEmoji.ttc",
-            @"Core/AppleColorEmoji@2x.ttf",
-            @"Core/AppleColorEmoji.ttf",
-            @"Cache/AppleColorEmoji@2x.ttf",
-            @"Cache/AppleColorEmoji.ttf",
-            @"Cache/AppleColorEmoji_2x.ttf",
-            @"Cache/AppleColorEmoji_1x.ttf"
-        ];
-        NSFileManager *fm = [NSFileManager defaultManager];
-        for (NSString *knownPath in knownEmojiFontPaths) {
-            if ([fm fileExistsAtPath:[NSString stringWithFormat:@"/System/Library/Fonts/%@", knownPath]]) {
-                defaultEmojiFontPath = [NSString stringWithFormat:@"/System/Library/Fonts/%@", knownPath];
-                break;
-            }
-        }
-        [footerSpecifier setProperty:[NSString stringWithFormat:@"\n©️ 2016 - 2022 @PoomSmart\n\nDefault emoji font path: %@", defaultEmojiFontPath] forKey:@"footerText"];
+        [footerSpecifier setProperty:@"\n©️ 2016 - 2022 @PoomSmart" forKey:@"footerText"];
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 
@@ -99,7 +80,6 @@
     if (indexPath.section == 0) {
         PSSpecifier *specifier = [tableCell specifier];
         NSString *font = [specifier propertyForKey:@"font"];
-
         [tableCell setChecked:[selectedFont isEqualToString:font]];
     }
 
