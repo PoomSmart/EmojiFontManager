@@ -1,3 +1,4 @@
+#include <Foundation/Foundation.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSTableCell.h>
@@ -7,6 +8,7 @@
 
 @interface EFMPrefController : PSListController {
     NSArray <NSString *> *allEmojiFonts;
+    NSMutableDictionary <NSString *, NSString *> *fontSizes;
     NSString *selectedFont;
 }
 @end
@@ -26,7 +28,8 @@
         [defaultFontSpecifier setProperty:@YES forKey:@"enabled"];
         [_specifiers addObject:defaultFontSpecifier];
         for (NSString *font in allEmojiFonts) {
-            PSSpecifier *fontSpecifier = [PSSpecifier preferenceSpecifierNamed:font target:nil set:nil get:nil detail:nil cell:PSStaticTextCell edit:nil];
+            NSString *name = [NSString stringWithFormat:@"%@ (%@)", [font substringToIndex:font.length - 5], fontSizes[font]];
+            PSSpecifier *fontSpecifier = [PSSpecifier preferenceSpecifierNamed:name target:nil set:nil get:nil detail:nil cell:PSStaticTextCell edit:nil];
             [fontSpecifier setProperty:font forKey:@"font"];
             [fontSpecifier setProperty:@YES forKey:@"enabled"];
             [_specifiers addObject:fontSpecifier];
@@ -49,6 +52,13 @@
 
 - (void)reloadFonts {
     allEmojiFonts = [self allEmojiFonts];
+    fontSizes = [NSMutableDictionary dictionary];
+    NSFileManager *manager = [NSFileManager defaultManager];
+    for (NSString *font in allEmojiFonts) {
+        NSString *path = [fontsPath stringByAppendingFormat:@"/%@/AppleColorEmoji@2x.ttc", font];
+        unsigned long long fileSize = [[manager attributesOfItemAtPath:path error:nil] fileSize];
+        fontSizes[font] = [NSByteCountFormatter stringFromByteCount:fileSize countStyle:NSByteCountFormatterCountStyleBinary];
+    }
 }
 
 - (void)reloadSelectedFont {
@@ -88,8 +98,7 @@
 
 - (PSSpecifier *)specifierForFontWithName:(NSString *)fontName {
     __block PSSpecifier *specifierToReturn;
-    [_specifiers enumerateObjectsUsingBlock:^(PSSpecifier* specifier, NSUInteger idx, BOOL *stop)
-    {
+    [_specifiers enumerateObjectsUsingBlock:^(PSSpecifier* specifier, NSUInteger idx, BOOL *stop) {
         NSString *specifierFont = [specifier propertyForKey:@"font"];
         if ([fontName isEqualToString:specifierFont]) {
             specifierToReturn = specifier;
