@@ -37,7 +37,7 @@ static NSString *getNewFontPath() {
             return newPath;
         }
     }
-    HBLogError(@"Could not get emoji font");
+    HBLogInfo(@"Use system emoji font");
     return nil;
 }
 

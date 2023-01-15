@@ -18,10 +18,11 @@
 - (NSMutableArray *)specifiers {
     if (!_specifiers) {
         _specifiers = [NSMutableArray new];
-        PSSpecifier *fontGroupSpecifier = [PSSpecifier preferenceSpecifierNamed:@"Available Fonts" target:nil set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
+        unsigned long long total = [self reloadFonts];
+        NSString *groupTitle = [NSString stringWithFormat:@"Available Fonts (%@)", [NSByteCountFormatter stringFromByteCount:total countStyle:NSByteCountFormatterCountStyleBinary]];
+        PSSpecifier *fontGroupSpecifier = [PSSpecifier preferenceSpecifierNamed:groupTitle target:nil set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
         [_specifiers addObject:fontGroupSpecifier];
 
-        [self reloadFonts];
         [self reloadSelectedFont];
         PSSpecifier *defaultFontSpecifier = [PSSpecifier preferenceSpecifierNamed:defaultName target:nil set:nil get:nil detail:nil cell:PSStaticTextCell edit:nil];
         [defaultFontSpecifier setProperty:defaultName forKey:@"font"];
@@ -36,7 +37,7 @@
         }
 
         PSSpecifier *footerSpecifier = [PSSpecifier emptyGroupSpecifier];
-        [footerSpecifier setProperty:@"\n©️ 2016 - 2022 @PoomSmart" forKey:@"footerText"];
+        [footerSpecifier setProperty:@"\n©️ 2016 - 2023 @PoomSmart" forKey:@"footerText"];
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 
@@ -50,15 +51,18 @@
     return _specifiers;
 }
 
-- (void)reloadFonts {
+- (unsigned long long)reloadFonts {
     allEmojiFonts = [self allEmojiFonts];
     fontSizes = [NSMutableDictionary dictionary];
     NSFileManager *manager = [NSFileManager defaultManager];
+    unsigned long long total = 0;
     for (NSString *font in allEmojiFonts) {
         NSString *path = [fontsPath stringByAppendingFormat:@"/%@/AppleColorEmoji@2x.ttc", font];
         unsigned long long fileSize = [[manager attributesOfItemAtPath:path error:nil] fileSize];
         fontSizes[font] = [NSByteCountFormatter stringFromByteCount:fileSize countStyle:NSByteCountFormatterCountStyleBinary];
+        total += fileSize;
     }
+    return total;
 }
 
 - (void)reloadSelectedFont {
