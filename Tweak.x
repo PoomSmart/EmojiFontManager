@@ -1,7 +1,7 @@
 #define CHECK_TARGET
 #define CHECK_WHITELIST
 #import "Prefs.h"
-#import "../PSPrefs/PSPrefs.x"
+#import "../../PSPrefs/PSPrefs.x"
 #import <CoreGraphics/CoreGraphics.h>
 #import <HBLog.h>
 #import <dlfcn.h>

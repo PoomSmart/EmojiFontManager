@@ -1,4 +1,4 @@
-#import "../PS.h"
+#import <PSHeader/PS.h>
 
 #define domain CFSTR("com.apple.UIKit")
 #define selectedFontKey CFSTR("selectedEmojiFont")
