@@ -1,4 +1,5 @@
 #import <objc/runtime.h>
+#import <dlfcn.h>
 #import <Foundation/Foundation.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
@@ -140,7 +141,8 @@
                 [self respring];
                 break;
             case 1:
-                [PSEmojiUtilities resetEmojiPreferences];
+                dlopen(ROOT_PATH("/usr/lib/libEmojiLibrary.dylib"), RTLD_NOW);
+                [objc_getClass("PSEmojiUtilities") resetEmojiPreferences];
                 break;
         }
         return;

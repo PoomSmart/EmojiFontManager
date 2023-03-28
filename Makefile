@@ -1,4 +1,4 @@
-TARGET = iphone:clang:latest:6.0
+TARGET = iphone:clang:15.5:6.0
 
 include $(THEOS)/makefiles/common.mk
 
@@ -12,7 +12,6 @@ BUNDLE_NAME = EFMPref
 $(BUNDLE_NAME)_FILES = EFMPref.m
 $(BUNDLE_NAME)_INSTALL_PATH = /Library/PreferenceBundles
 $(BUNDLE_NAME)_CFLAGS = -fobjc-arc
-$(BUNDLE_NAME)_LIBRARIES = EmojiLibrary
 $(BUNDLE_NAME)_FRAMEWORKS = UIKit
 $(BUNDLE_NAME)_PRIVATE_FRAMEWORKS = Preferences
 
