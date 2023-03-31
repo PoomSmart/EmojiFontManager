@@ -1,8 +1,12 @@
-#include <Foundation/Foundation.h>
+#import <objc/runtime.h>
+#import <dlfcn.h>
+#import <Foundation/Foundation.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSTableCell.h>
-#import <Cephei/HBRespringController.h>
+#import <SpringBoardServices/SBSRestartRenderServerAction.h>
+#import <FrontBoardServices/FBSSystemService.h>
+#define KILL_PROCESS
 #import "Prefs.h"
 #import "../EmojiLibrary/PSEmojiUtilities.h"
 
@@ -37,7 +41,7 @@
         }
 
         PSSpecifier *footerSpecifier = [PSSpecifier emptyGroupSpecifier];
-        [footerSpecifier setProperty:@"\n©️ 2016 - 2023 @PoomSmart" forKey:@"footerText"];
+        [footerSpecifier setProperty:@"\n©️ 2016 - 2023 PoomSmart" forKey:@"footerText"];
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 
@@ -73,6 +77,23 @@
 - (void)setSpecifier:(PSSpecifier *)specifier {
     [super setSpecifier:specifier];
     self.navigationItem.title = @"EFM 🚀";
+}
+
+- (void)respring {
+    // From libcephei
+    [[NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/FrontBoardServices.framework"] load];
+    [[NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/SpringBoardServices.framework"] load];
+    Class FBSSystemService = objc_getClass("FBSSystemService");
+    if (FBSSystemService) {
+        Class SBSRelaunchAction = objc_getClass("SBSRelaunchAction");
+        id restartAction;
+        if (SBSRelaunchAction)
+            restartAction = [SBSRelaunchAction actionWithReason:@"RestartRenderServer" options:SBSRelaunchActionOptionsFadeToBlackTransition targetURL:nil];
+        else
+            restartAction = [objc_getClass("SBSRestartRenderServerAction") restartActionWithTargetRelaunchURL:nil];
+        [[FBSSystemService sharedService] sendActions:[NSSet setWithObject:restartAction] withResult:nil];
+    } else
+        killProcess("SpringBoard");
 }
 
 - (NSString *)_fontsPath {
@@ -117,10 +138,11 @@
     if (indexPath.section != 0) {
         switch (indexPath.row) {
             case 0:
-                [HBRespringController respring];
+                [self respring];
                 break;
             case 1:
-                [PSEmojiUtilities resetEmojiPreferences];
+                dlopen(ROOT_PATH("/usr/lib/libEmojiLibrary.dylib"), RTLD_NOW);
+                [objc_getClass("PSEmojiUtilities") resetEmojiPreferences];
                 break;
         }
         return;

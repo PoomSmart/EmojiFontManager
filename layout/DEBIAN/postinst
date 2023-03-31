@@ -1,24 +1,3 @@
 #!/bin/bash
 
-THEME_PATH=/Library/Themes
-
-if [ ! -d ${THEME_PATH} ]
-then
-    echo "No Anemone Wrapper"
-    exit 0
-fi
-
-EFM_THEME_PATH=/Library/Themes/EmojiFontManager
-mkdir -p "${EFM_THEME_PATH}"
-
-for theme in $(find ${THEME_PATH} -maxdepth 1 -type d -name "*.theme")
-do
-    if [ -d $theme/ANEMFontsOverride ]
-    then
-        EFM_FONT_PATH="${EFM_THEME_PATH}${theme/${THEME_PATH}/}"
-        EFM_FONT_PATH="${EFM_FONT_PATH/.theme/.font}"
-        ln -sf "$theme/ANEMFontsOverride" "${EFM_FONT_PATH}"
-    fi
-done
-
 killall -9 com.apple.WebKit.WebContent || true
