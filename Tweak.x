@@ -6,8 +6,10 @@
 #import <HBLog.h>
 #import <dlfcn.h>
 
+typedef const struct __FPFont *FPFontRef;
+
 NSString *selectedFont;
-static CFStringRef newFontPath;
+CFStringRef newFontPath;
 
 static NSString *getPath(NSString *font) {
     if (!font) {
@@ -45,9 +47,12 @@ static CFStringRef getNewFontPath() {
 
 extern CFArrayRef CGFontCreateFontsWithPath(CFStringRef);
 %hookf(CFArrayRef, CGFontCreateFontsWithPath, CFStringRef path) {
-    if (path && newFontPath && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
-        HBLogDebug(@"Emoji font overridden at CGFontCreateFontsWithPath");
-        return %orig(newFontPath);
+    if (path && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
+        CFStringRef newFontPath = getNewFontPath();
+        if (newFontPath) {
+            HBLogDebug(@"Emoji font overridden at CGFontCreateFontsWithPath");
+            return %orig(newFontPath);
+        }
     }
     return %orig(path);
 }
@@ -58,11 +63,14 @@ extern CFArrayRef CGFontCreateFontsWithPath(CFStringRef);
 
 extern CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, CFStringRef);
 %hookf(CFURLRef, CFURLCreateCopyAppendingPathExtension, CFAllocatorRef allocator, CFURLRef url, CFStringRef extension) {
-    if (url && newFontPath && CFStringEqual(extension, CFSTR("ccf")) && ![selectedFont isEqualToString:defaultName]) {
-        CFStringRef path = CFURLCopyPath(url);
-        if (CFStringFind(path, CFSTR("/System/Library/Fonts/Core/AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
-            extension = CFSTR("null");
-        if (path) CFRelease(path);
+    if (url && CFStringEqual(extension, CFSTR("ccf")) && ![selectedFont isEqualToString:defaultName]) {
+        CFStringRef newFontPath = getNewFontPath();
+        if (newFontPath) {
+            CFStringRef path = CFURLCopyPath(url);
+            if (CFStringFind(path, CFSTR("/System/Library/Fonts/Core/AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
+                extension = CFSTR("null");
+            if (path) CFRelease(path);
+        }
     }
     return %orig(allocator, url, extension);
 }
@@ -73,18 +81,24 @@ extern CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, 
 
 CFArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 %hookf(CFArrayRef, FPFontCreateFontsWithPath, CFStringRef path) {
-    if (path && newFontPath && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
-        HBLogDebug(@"Emoji font overridden at FPFontCreateFontsWithPath");
-        return %orig(newFontPath);
+    if (path && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
+        CFStringRef newFontPath = getNewFontPath();
+        if (newFontPath) {
+            HBLogDebug(@"Emoji font overridden at FPFontCreateFontsWithPath");
+            return %orig(newFontPath);
+        }
     }
     return %orig(path);
 }
 
-CGFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = NULL;
-%hookf(CGFontRef, FPFontCreateWithPathAndName, CFStringRef path, CFStringRef name) {
-    if (name && newFontPath && (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI")))) {
-        HBLogDebug(@"Emoji font overridden at FPFontCreateWithPathAndName");
-        return %orig(newFontPath, name);
+FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = NULL;
+%hookf(FPFontRef, FPFontCreateWithPathAndName, CFStringRef path, CFStringRef name) {
+    if (name && (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI")))) {
+        CFStringRef newFontPath = getNewFontPath();
+        if (newFontPath) {
+            HBLogDebug(@"Emoji font overridden at FPFontCreateWithPathAndName");
+            return %orig(newFontPath, name);
+        }
     }
     return %orig(path, name);
 }
@@ -119,7 +133,6 @@ CGFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
 
 %ctor {
     if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"], nil)) {
-        newFontPath = getNewFontPath();
         const char *fontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib";
         if (dlopen(fontParserPath, RTLD_NOW)) {
             MSImageRef fontParserRef = MSGetImageByName(fontParserPath);
