@@ -77,7 +77,7 @@ extern CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, 
 
 %end
 
-%group FontParser
+%group FontParserPath
 
 CFArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
 %hookf(CFArrayRef, FPFontCreateFontsWithPath, CFStringRef path) {
@@ -90,6 +90,10 @@ CFArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
     }
     return %orig(path);
 }
+
+%end
+
+%group FontParserPathAndName
 
 FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = NULL;
 %hookf(FPFontRef, FPFontCreateWithPathAndName, CFStringRef path, CFStringRef name) {
@@ -105,27 +109,36 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
 
 %end
 
-// %group Legacy
-
-// CFStringRef (*_CTGetEmojiFontName)(int) = NULL;
-// %hookf(CFStringRef, _CTGetEmojiFontName, int arg1) {
-//     return CFSTR("AppleColorEmoji");
-// }
-
-// %end
-
 // %group OT
 
 // NSDictionary *(*GSFontGetCacheDictionary)() = NULL;
 // %hookf(NSDictionary *, GSFontGetCacheDictionary) {
 //     NSMutableDictionary *dict = (NSMutableDictionary *)CFBridgingRelease(CFPropertyListCreateDeepCopy(kCFAllocatorDefault, (CFDictionaryRef)%orig, kCFPropertyListMutableContainersAndLeaves));
-//     dict[@"Attrs"][@"AppleColorEmoji"][@"CTFontHasOTFeatures"] = @(YES);
+//     CFStringRef newFontPath = getNewFontPath();
+//     // dict[@"Attrs"][@"AppleColorEmoji"][@"CTFontHasOTFeatures"] = @(YES);
 //     dict[@"GSFontCache"][@"CGCache"][@"Names"][@"AppleColorEmoji"] =
 //         dict[@"GSFontCache"][@"CGCache"][@"Names"][@".AppleColorEmojiUI"] =
 //         dict[@"GSFontCache"][@"__PSToFileName"][@"AppleColorEmoji"] =
 //         dict[@"GSFontCache"][@"__PSToFileName"][@".AppleColorEmojiUI"] =
 //         dict[@"GSFontCache"][@"__PSToFileNameHighRes"][@"AppleColorEmoji"] =
-//         dict[@"GSFontCache"][@"__PSToFileNameHighRes"][@".AppleColorEmojiUI"] = newFontPath;
+//         dict[@"GSFontCache"][@"__PSToFileNameHighRes"][@".AppleColorEmojiUI"] = (__bridge NSString *)newFontPath;
+//     return dict;
+// }
+
+// NSDictionary *(*GSFontGetCacheData)(NSString *) = NULL;
+// %hookf(NSDictionary *, GSFontGetCacheData, NSString *entry) {
+//     NSDictionary *dict = %orig(entry);
+//     if ([entry isEqualToString:@"GSFontCache"]) {
+//         NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:dict];
+//         CFStringRef newFontPath = getNewFontPath();
+//         newDict[@"CGCache"][@"Names"][@"AppleColorEmoji"] =
+//             newDict[@"CGCache"][@"Names"][@".AppleColorEmojiUI"] =
+//             newDict[@"__PSToFileName"][@"AppleColorEmoji"] =
+//             newDict[@"__PSToFileName"][@".AppleColorEmojiUI"] =
+//             newDict[@"__PSToFileNameHighRes"][@"AppleColorEmoji"] =
+//             newDict[@"__PSToFileNameHighRes"][@".AppleColorEmojiUI"] = (__bridge NSString *)newFontPath;
+//         return newDict;
+//     }
 //     return dict;
 // }
 
@@ -134,32 +147,33 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
 %ctor {
     if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"], nil)) {
         const char *fontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib";
-        if (dlopen(fontParserPath, RTLD_NOW)) {
+        if (dlopen(fontParserPath, RTLD_LAZY)) {
             MSImageRef fontParserRef = MSGetImageByName(fontParserPath);
             FPFontCreateFontsWithPath = MSFindSymbol(fontParserRef, "_FPFontCreateFontsWithPath");
             FPFontCreateWithPathAndName = MSFindSymbol(fontParserRef, "_FPFontCreateWithPathAndName");
-            if (FPFontCreateFontsWithPath != NULL && FPFontCreateWithPathAndName != NULL) {
-                HBLogDebug(@"Init libFontParser hooks");
-                %init(FontParser);
+            if (FPFontCreateFontsWithPath != NULL) {
+                HBLogDebug(@"Hooking FPFontCreateFontsWithPath");
+                %init(FontParserPath);
+            }
+            if (FPFontCreateWithPathAndName != NULL) {
+                HBLogDebug(@"Hooking FPFontCreateWithPathAndName");
+                %init(FontParserPathAndName);
             }
         } else {
+            HBLogDebug(@"Hooking CGFontCreateFontsWithPath");
             %init(Path);
         }
         // const char *gsFontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libGSFont.dylib";
         // if (dlopen(gsFontParserPath, RTLD_NOW)) {
         //     MSImageRef gsFontParserRef = MSGetImageByName(gsFontParserPath);
+        //     GSFontGetCacheData = MSFindSymbol(gsFontParserRef, "_GSFontGetCacheData");
         //     GSFontGetCacheDictionary = MSFindSymbol(gsFontParserRef, "_GSFontGetCacheDictionary");
-        //     if (GSFontGetCacheDictionary != NULL) {
-        //         HBLogDebug(@"Init GSFontGetCacheDictionary hook");
+        //     if (GSFontGetCacheData != NULL && GSFontGetCacheDictionary != NULL) {
+        //         HBLogDebug(@"Init libGSFont hooks");
         //         %init(OT);
         //     }
         // }
-        // MSImageRef ctRef = MSGetImageByName("/System/Library/Frameworks/CoreText.framework/CoreText");
-        // _CTGetEmojiFontName = MSFindSymbol(ctRef, "__CTGetEmojiFontName");
-        // if (_CTGetEmojiFontName != NULL) {
-        //     %init(Legacy);
-        // }
-        if (IS_IOS_OR_NEWER(iOS_8_3)) {
+        if (IS_IOS_BETWEEN_EEX(iOS_8_3, iOS_10_0)) {
             %init(CCF);
         }
     }
