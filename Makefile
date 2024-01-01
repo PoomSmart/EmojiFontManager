@@ -1,7 +1,7 @@
 ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
 	TARGET = iphone:clang:15.5:14.0
 else
-	TARGET = iphone:clang:15.5:6.0
+	TARGET = iphone:clang:16.5:6.0
 endif
 
 include $(THEOS)/makefiles/common.mk

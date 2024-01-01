@@ -173,7 +173,7 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
         //         %init(OT);
         //     }
         // }
-        if (IS_IOS_BETWEEN_EEX(iOS_8_3, iOS_10_0)) {
+        if (IS_IOS_BETWEEN_EEX(iOS_8_3, iOS_11_0)) {
             %init(CCF);
         }
     }
