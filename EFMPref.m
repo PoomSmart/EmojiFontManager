@@ -1,14 +1,14 @@
-#import <objc/runtime.h>
-#import <dlfcn.h>
 #import <Foundation/Foundation.h>
+#import <EmojiLibrary/PSEmojiUtilities.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSTableCell.h>
 #import <SpringBoardServices/SBSRestartRenderServerAction.h>
 #import <FrontBoardServices/FBSSystemService.h>
+#import <objc/runtime.h>
+#import <dlfcn.h>
 #define KILL_PROCESS
 #import "Prefs.h"
-#import "../EmojiLibrary/PSEmojiUtilities.h"
 
 @interface EFMPrefController : PSListController {
     NSArray <NSString *> *allEmojiFonts;
@@ -41,7 +41,7 @@
         }
 
         PSSpecifier *footerSpecifier = [PSSpecifier emptyGroupSpecifier];
-        [footerSpecifier setProperty:@"\n©️ 2016 - 2023 PoomSmart" forKey:@"footerText"];
+        [footerSpecifier setProperty:@"\n©️ 2016 - 2024 PoomSmart" forKey:@"footerText"];
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 
