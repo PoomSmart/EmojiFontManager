@@ -13,7 +13,7 @@ CFStringRef newFontPath;
 
 static NSString *getPath(NSString *font) {
     if (!font) {
-        HBLogError(@"font name is nil");
+        HBLogDebug(@"EFM: Font name is nil");
         return nil;
     }
     return [NSString stringWithFormat:@"%@/%@/AppleColorEmoji@2x.ttc", fontsPath, font];
@@ -35,11 +35,11 @@ static CFStringRef getNewFontPath() {
         if (!exist)
             exist = fileExist(newPath = [newPath stringByReplacingOccurrencesOfString:@"ttc" withString:@"ttf"]);
         if (exist) {
-            HBLogDebug(@"New emoji font: %@", newPath);
+            HBLogDebug(@"EFM: New emoji font: %@", newPath);
             return (__bridge CFStringRef)newPath;
         }
     }
-    HBLogInfo(@"Use system emoji font");
+    HBLogDebug(@"EFM: Use system emoji font");
     return NULL;
 }
 
@@ -50,7 +50,7 @@ extern CFArrayRef CGFontCreateFontsWithPath(CFStringRef);
     if (path && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
         CFStringRef newFontPath = getNewFontPath();
         if (newFontPath) {
-            HBLogDebug(@"Emoji font overridden at CGFontCreateFontsWithPath");
+            HBLogDebug(@"EFM: Emoji font overridden at CGFontCreateFontsWithPath");
             return %orig(newFontPath);
         }
     }
@@ -84,7 +84,7 @@ CFArrayRef (*FPFontCreateFontsWithPath)(CFStringRef) = NULL;
     if (path && CFStringFind(path, CFSTR("AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound) {
         CFStringRef newFontPath = getNewFontPath();
         if (newFontPath) {
-            HBLogDebug(@"Emoji font overridden at FPFontCreateFontsWithPath");
+            HBLogDebug(@"EFM: Emoji font overridden at FPFontCreateFontsWithPath");
             return %orig(newFontPath);
         }
     }
@@ -100,7 +100,7 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
     if (name && (CFStringEqual(name, CFSTR("AppleColorEmoji")) || CFStringEqual(name, CFSTR(".AppleColorEmojiUI")))) {
         CFStringRef newFontPath = getNewFontPath();
         if (newFontPath) {
-            HBLogDebug(@"Emoji font overridden at FPFontCreateWithPathAndName");
+            HBLogDebug(@"EFM: Emoji font overridden at FPFontCreateWithPathAndName");
             return %orig(newFontPath, name);
         }
     }
@@ -152,15 +152,15 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
             FPFontCreateFontsWithPath = MSFindSymbol(fontParserRef, "_FPFontCreateFontsWithPath");
             FPFontCreateWithPathAndName = MSFindSymbol(fontParserRef, "_FPFontCreateWithPathAndName");
             if (FPFontCreateFontsWithPath != NULL) {
-                HBLogDebug(@"Hooking FPFontCreateFontsWithPath");
+                HBLogDebug(@"EFM: Hooking FPFontCreateFontsWithPath");
                 %init(FontParserPath);
             }
             if (FPFontCreateWithPathAndName != NULL) {
-                HBLogDebug(@"Hooking FPFontCreateWithPathAndName");
+                HBLogDebug(@"EFM: Hooking FPFontCreateWithPathAndName");
                 %init(FontParserPathAndName);
             }
         } else {
-            HBLogDebug(@"Hooking CGFontCreateFontsWithPath");
+            HBLogDebug(@"EFM: Hooking CGFontCreateFontsWithPath");
             %init(Path);
         }
         // const char *gsFontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libGSFont.dylib";
@@ -169,7 +169,7 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
         //     GSFontGetCacheData = MSFindSymbol(gsFontParserRef, "_GSFontGetCacheData");
         //     GSFontGetCacheDictionary = MSFindSymbol(gsFontParserRef, "_GSFontGetCacheDictionary");
         //     if (GSFontGetCacheData != NULL && GSFontGetCacheDictionary != NULL) {
-        //         HBLogDebug(@"Init libGSFont hooks");
+        //         HBLogDebug(@"EFM: Init libGSFont hooks");
         //         %init(OT);
         //     }
         // }
