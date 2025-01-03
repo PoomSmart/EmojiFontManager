@@ -59,6 +59,8 @@ extern CFArrayRef CGFontCreateFontsWithPath(CFStringRef);
 
 %end
 
+#if !__arm64e__
+
 %group CCF
 
 extern CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, CFStringRef);
@@ -67,15 +69,19 @@ extern CFURLRef CFURLCreateCopyAppendingPathExtension(CFAllocatorRef, CFURLRef, 
         CFStringRef newFontPath = getNewFontPath();
         if (newFontPath) {
             CFStringRef path = CFURLCopyPath(url);
-            if (CFStringFind(path, CFSTR("/System/Library/Fonts/Core/AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
-                extension = CFSTR("null");
-            if (path) CFRelease(path);
+            if (path) {
+                if (CFStringFind(path, CFSTR("/System/Library/Fonts/Core/AppleColorEmoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
+                    extension = CFSTR("null");
+                CFRelease(path);
+            }
         }
     }
     return %orig(allocator, url, extension);
 }
 
 %end
+
+#endif
 
 %group FontParserPath
 
@@ -173,8 +179,10 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
         //         %init(OT);
         //     }
         // }
+#if !__arm64e__
         if (IS_IOS_BETWEEN_EEX(iOS_8_3, iOS_11_0)) {
             %init(CCF);
         }
+#endif
     }
 }

@@ -41,7 +41,7 @@
         }
 
         PSSpecifier *footerSpecifier = [PSSpecifier emptyGroupSpecifier];
-        [footerSpecifier setProperty:@"\n©️ 2016 - 2024 PoomSmart" forKey:@"footerText"];
+        [footerSpecifier setProperty:@"\n©️ 2016 - 2025 PoomSmart" forKey:@"footerText"];
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 
@@ -105,7 +105,8 @@
     NSArray <NSString *> *contents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[self _fontsPath] error:&error];
     if (error)
         return @[];
-    contents = [contents filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF endswith %@", @"font"]];
+    contents = [contents filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF endswith %@", @"font"]]; 
+    contents = [contents sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
     return contents;
 }
 

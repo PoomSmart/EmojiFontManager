@@ -4,7 +4,7 @@ else
 	TARGET = iphone:clang:14.5:6.0
 	export PREFIX = $(THEOS)/toolchain/Xcode11.xctoolchain/usr/bin/
 endif
-PACKAGE_VERSION = 1.3.6
+PACKAGE_VERSION = 1.3.7
 
 include $(THEOS)/makefiles/common.mk
 
