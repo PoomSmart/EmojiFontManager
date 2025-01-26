@@ -142,7 +142,7 @@
                 [self respring];
                 break;
             case 1:
-                dlopen(ROOT_PATH("/usr/lib/libEmojiLibrary.dylib"), RTLD_NOW);
+                dlopen(PS_ROOT_PATH("/usr/lib/libEmojiLibrary.dylib"), RTLD_NOW);
                 [objc_getClass("PSEmojiUtilities") resetEmojiPreferences];
                 break;
         }
