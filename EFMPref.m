@@ -41,7 +41,7 @@
         }
 
         PSSpecifier *footerSpecifier = [PSSpecifier emptyGroupSpecifier];
-        [footerSpecifier setProperty:@"\n©️ 2016 - 2025 PoomSmart" forKey:@"footerText"];
+        [footerSpecifier setProperty:@"\n©️ 2016 - 2026 PoomSmart" forKey:@"footerText"];
         [footerSpecifier setProperty:@1 forKey:@"footerAlignment"];
         [_specifiers addObject:footerSpecifier];
 

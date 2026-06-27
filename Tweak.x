@@ -9,7 +9,6 @@
 typedef const struct __FPFont *FPFontRef;
 
 NSString *selectedFont;
-CFStringRef newFontPath;
 
 static NSString *getPath(NSString *font) {
     if (!font) {
@@ -20,15 +19,21 @@ static NSString *getPath(NSString *font) {
 }
 
 static CFStringRef getNewFontPath() {
-    const void *value = CFPreferencesCopyAppValue(selectedFontKey, domain);
+    CFStringRef value = (CFStringRef)CFPreferencesCopyAppValue(selectedFontKey, domain);
     if (value == NULL)
-        value = CFPreferencesCopyValue(selectedFontKey, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+        value = (CFStringRef)CFPreferencesCopyValue(selectedFontKey, domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
     if (value == NULL) {
         GetPrefs();
-        selectedFont = PSSettings[(__bridge NSString *)selectedFontKey];
+        if (selectedFont == nil)
+            selectedFont = PSSettings[(__bridge NSString *)selectedFontKey];
+    } else if (selectedFont == nil) {
+        selectedFont = (__bridge_transfer NSString *)value;
+        value = NULL;
     }
+    if (value)
+        CFRelease(value);
     if (selectedFont == nil)
-        selectedFont = value ? (__bridge NSString *)value : defaultName;
+        selectedFont = defaultName;
     NSString *newPath = getPath(selectedFont);
     if (newPath && ![newPath isEqualToString:defaultName]) {
         BOOL exist = fileExist(newPath);
@@ -115,41 +120,6 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
 
 %end
 
-// %group OT
-
-// NSDictionary *(*GSFontGetCacheDictionary)() = NULL;
-// %hookf(NSDictionary *, GSFontGetCacheDictionary) {
-//     NSMutableDictionary *dict = (NSMutableDictionary *)CFBridgingRelease(CFPropertyListCreateDeepCopy(kCFAllocatorDefault, (CFDictionaryRef)%orig, kCFPropertyListMutableContainersAndLeaves));
-//     CFStringRef newFontPath = getNewFontPath();
-//     // dict[@"Attrs"][@"AppleColorEmoji"][@"CTFontHasOTFeatures"] = @(YES);
-//     dict[@"GSFontCache"][@"CGCache"][@"Names"][@"AppleColorEmoji"] =
-//         dict[@"GSFontCache"][@"CGCache"][@"Names"][@".AppleColorEmojiUI"] =
-//         dict[@"GSFontCache"][@"__PSToFileName"][@"AppleColorEmoji"] =
-//         dict[@"GSFontCache"][@"__PSToFileName"][@".AppleColorEmojiUI"] =
-//         dict[@"GSFontCache"][@"__PSToFileNameHighRes"][@"AppleColorEmoji"] =
-//         dict[@"GSFontCache"][@"__PSToFileNameHighRes"][@".AppleColorEmojiUI"] = (__bridge NSString *)newFontPath;
-//     return dict;
-// }
-
-// NSDictionary *(*GSFontGetCacheData)(NSString *) = NULL;
-// %hookf(NSDictionary *, GSFontGetCacheData, NSString *entry) {
-//     NSDictionary *dict = %orig(entry);
-//     if ([entry isEqualToString:@"GSFontCache"]) {
-//         NSMutableDictionary *newDict = [NSMutableDictionary dictionaryWithDictionary:dict];
-//         CFStringRef newFontPath = getNewFontPath();
-//         newDict[@"CGCache"][@"Names"][@"AppleColorEmoji"] =
-//             newDict[@"CGCache"][@"Names"][@".AppleColorEmojiUI"] =
-//             newDict[@"__PSToFileName"][@"AppleColorEmoji"] =
-//             newDict[@"__PSToFileName"][@".AppleColorEmojiUI"] =
-//             newDict[@"__PSToFileNameHighRes"][@"AppleColorEmoji"] =
-//             newDict[@"__PSToFileNameHighRes"][@".AppleColorEmojiUI"] = (__bridge NSString *)newFontPath;
-//         return newDict;
-//     }
-//     return dict;
-// }
-
-// %end
-
 %ctor {
     if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"], nil)) {
         const char *fontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib";
@@ -169,16 +139,6 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
             HBLogDebug(@"EFM: Hooking CGFontCreateFontsWithPath");
             %init(Path);
         }
-        // const char *gsFontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libGSFont.dylib";
-        // if (dlopen(gsFontParserPath, RTLD_NOW)) {
-        //     MSImageRef gsFontParserRef = MSGetImageByName(gsFontParserPath);
-        //     GSFontGetCacheData = MSFindSymbol(gsFontParserRef, "_GSFontGetCacheData");
-        //     GSFontGetCacheDictionary = MSFindSymbol(gsFontParserRef, "_GSFontGetCacheDictionary");
-        //     if (GSFontGetCacheData != NULL && GSFontGetCacheDictionary != NULL) {
-        //         HBLogDebug(@"EFM: Init libGSFont hooks");
-        //         %init(OT);
-        //     }
-        // }
 #if !__arm64e__
         if (IS_IOS_BETWEEN_EEX(iOS_8_3, iOS_11_0)) {
             %init(CCF);
