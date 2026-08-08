@@ -120,8 +120,40 @@ FPFontRef (*FPFontCreateWithPathAndName)(CFStringRef path, CFStringRef name) = N
 
 %end
 
+%group GSFontPath
+
+const void (*GSFontCopyFontFilePath)(const void *psName) = NULL;
+%hookf(const void *, GSFontCopyFontFilePath, const void *psName) {
+    if (psName && (CFStringEqual((CFStringRef)psName, CFSTR("AppleColorEmoji"))
+                || CFStringEqual((CFStringRef)psName, CFSTR(".AppleColorEmojiUI")))) {
+        CFStringRef newFontPath = getNewFontPath();
+        if (newFontPath) {
+            HBLogDebug(@"EFM: Emoji font overridden at GSFontCopyFontFilePath");
+            return CFRetain(newFontPath);
+        }
+    }
+    return %orig(psName);
+}
+
+%end
+
 %ctor {
     if (_isTarget(TargetTypeApps | TargetTypeGenericExtensions, @[@"com.apple.WebKit.WebContent"], nil)) {
+        static const char *const gsFontPaths[] = {
+            "/System/Library/PrivateFrameworks/FontServices.framework/libGSFont.dylib",
+            "/System/Library/PrivateFrameworks/GraphicsServices.framework/libGSFont.dylib",
+        };
+        for (size_t i = 0; i < sizeof(gsFontPaths) / sizeof(gsFontPaths[0]); i++) {
+            if (!dlopen(gsFontPaths[i], RTLD_LAZY))
+                continue;
+            MSImageRef gsFontRef = MSGetImageByName(gsFontPaths[i]);
+            GSFontCopyFontFilePath = MSFindSymbol(gsFontRef, "_GSFontCopyFontFilePath");
+            if (GSFontCopyFontFilePath != NULL) {
+                HBLogDebug(@"EFM: Hooking GSFontCopyFontFilePath (%s)", gsFontPaths[i]);
+                %init(GSFontPath);
+                break;
+            }
+        }
         const char *fontParserPath = "/System/Library/PrivateFrameworks/FontServices.framework/libFontParser.dylib";
         if (dlopen(fontParserPath, RTLD_LAZY)) {
             MSImageRef fontParserRef = MSGetImageByName(fontParserPath);
