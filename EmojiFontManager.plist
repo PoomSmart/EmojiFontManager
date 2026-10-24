@@ -12,6 +12,7 @@
         <key>Executables</key>
         <array>
             <string>MarkupPhotoExtension</string>
+            <string>chronod</string>
         </array>
     </dict>
 </dict>
